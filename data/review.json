@@ -18,7 +18,7 @@
     "deal_date": "2026-09-09",
     "confidence": "high",
     "notes": "Uber's second investment in Carrum Mobility; previous $7 million investment in January 2026",
-    "event_reported": "Carrum Mobility raised $10 million in Series B funding led by Uber.",
+    "event_reported": "Carrum Mobility raises $10 million in Series B funding led by Uber",
     "source_url": "https://entrackr.com/snippets/fleet-management-platform-carrum-mobility-raises-10-mn-in-series-b-led-by-uber-12511605",
     "source_outlet": "Entrackr",
     "source_tier": 1,
@@ -38,7 +38,7 @@
     "first_reported_by": "Entrackr",
     "source_count": 1,
     "conflicts": [],
-    "date_added": "2026-09-14T09:01:33.601517+00:00",
+    "date_added": "2026-09-14T09:05:29.032833+00:00",
     "amount_recomputed": false
   },
   {
@@ -70,8 +70,8 @@
     "valuation_usd_mn": 477.27,
     "deal_date": "2026-09-09",
     "confidence": "high",
-    "notes": "IPO opens for subscription on September 9, 2026 and closes on September 11. Anchor shares allotted at Rs 404 per share (upper end of price band). Total IPO size planned at Rs 1,255.6 crore comprising fresh issue of Rs 150 crore and OFS of Rs 1,105.6 crore.",
-    "event_reported": "Rentomojo's anchor investors have been allotted 93.08 lakh equity shares worth Rs 376.07 crore ahead of its IPO opening.",
+    "notes": "93.08 lakh shares allotted at Rs 404 per share (upper end of price band). IPO subscription opens September 9, closes September 11. Total IPO size planned at Rs 1,255.6 crore (fresh issue Rs 150 crore + OFS Rs 1,105.6 crore).",
+    "event_reported": "Rentomojo's anchor investors have been allotted shares worth Rs 376.07 crore at Rs 404 per share ahead of its IPO opening.",
     "source_url": "https://entrackr.com/news/rentomojo-raises-rs-376-cr-from-anchor-investors-ahead-of-ipo-12509513",
     "source_outlet": "Entrackr",
     "source_tier": 1,
@@ -91,7 +91,7 @@
     "first_reported_by": "Entrackr",
     "source_count": 1,
     "conflicts": [],
-    "date_added": "2026-09-14T09:01:35.984281+00:00",
+    "date_added": "2026-09-14T09:05:30.163036+00:00",
     "amount_recomputed": false
   },
   {
@@ -117,8 +117,8 @@
     "valuation_usd_mn": 43.0,
     "deal_date": "2026-09-09",
     "confidence": "high",
-    "notes": "Post-money valuation Rs 402 crore ($43 million), 4.5X increase from previous Rs 90 crore valuation. Previous pre-Series A round of $1.5 million in September 2024 led by Prath Ventures.",
-    "event_reported": "Fashion brand Theater raised Rs 56.25 crore in Series A funding at a Rs 400 crore valuation, led by Niveshaay with participation from FirstPort Capital, Skagen Ventures, and others.",
+    "notes": "Post-money valuation Rs 402 crore ($43 million), 4.5X increase from previous Rs 90 crore valuation. Niveshaay invested Rs 37 crore, FirstPort Capital Rs 12.81 crore, Skagen Ventures Rs 3.36 crore.",
+    "event_reported": "Fashion brand Theater raised Rs 56.25 crore in Series A funding at a Rs 400 crore valuation.",
     "source_url": "https://entrackr.com/exclusive/exclusive-fashion-brand-theater-raises-series-a-at-rs-400-cr-valuation-12509223",
     "source_outlet": "Entrackr",
     "source_tier": 1,
@@ -138,7 +138,7 @@
     "first_reported_by": "Entrackr",
     "source_count": 1,
     "conflicts": [],
-    "date_added": "2026-09-14T09:01:35.094469+00:00",
+    "date_added": "2026-09-14T09:05:29.757040+00:00",
     "amount_recomputed": false
   },
   {
@@ -146,7 +146,7 @@
     "ipo_milestone": null,
     "company_name": "QNu Labs",
     "company_legal_name": null,
-    "sector": "Deep-tech cybersecurity and quantum-safe infrastructure solutions",
+    "sector": "deep-tech cybersecurity and quantum-safe infrastructure solutions",
     "amount_usd_mn": 22.73,
     "amount_as_reported": "Rs 200 crore",
     "round_stage": "Series A1",
@@ -164,7 +164,7 @@
     "deal_date": "2026-09-09",
     "confidence": "high",
     "notes": "Total capital raised to date is Rs 375 crore. Previously raised Rs 60 crore in Series A (April 2025) and $6.5 million in pre-Series A1 (December 2023).",
-    "event_reported": "QNu Labs raised Rs 200 crore in a Series A1 funding round co-led by the National Quantum Mission and Speciale Invest.",
+    "event_reported": "QNu Labs raises Rs 200 crore in Series A1 funding round co-led by National Quantum Mission and Speciale Invest",
     "source_url": "https://entrackr.com/news/deep-tech-cybersecurity-company-qnu-labs-raises-rs-200-cr-in-series-a1-round-12509199",
     "source_outlet": "Entrackr",
     "source_tier": 1,
@@ -184,7 +184,7 @@
     "first_reported_by": "Entrackr",
     "source_count": 1,
     "conflicts": [],
-    "date_added": "2026-09-14T09:01:35.247080+00:00",
+    "date_added": "2026-09-14T09:05:31.021887+00:00",
     "amount_recomputed": false
   },
   {
@@ -192,7 +192,7 @@
     "ipo_milestone": null,
     "company_name": "Marmalade",
     "company_legal_name": null,
-    "sector": "Alcoholic beverages, craft spirits",
+    "sector": "Alcoholic beverages - craft spirits and whiskey",
     "amount_usd_mn": 0.682,
     "amount_as_reported": "Rs 6 crore",
     "round_stage": "Seed",
@@ -209,8 +209,8 @@
     "valuation_usd_mn": null,
     "deal_date": "2026-09-09",
     "confidence": "high",
-    "notes": "Flagship brand Brightside is an Indian craft whiskey developed in partnership with Amrut Distilleries. Company co-founded in 2025 by Udit Mediratta and Surojit Bhattacharya.",
-    "event_reported": "Marmalade, an alcoholic beverages startup, raised Rs 6 crore in a seed funding round from investors including Ashok Chokalingam, Robert Sellares, Ishank Gupta, and HomeLane founders Srikanth Iyer and Tanuj Choudhry.",
+    "notes": "Flagship brand Brightside is an Indian craft whiskey developed in partnership with Amrut Distilleries",
+    "event_reported": "Alco-bev startup Marmalade raised Rs 6 crore in a seed funding round",
     "source_url": "https://entrackr.com/snippets/alco-bev-startup-marmalade-raises-seed-round-12508946",
     "source_outlet": "Entrackr",
     "source_tier": 1,
@@ -230,7 +230,7 @@
     "first_reported_by": "Entrackr",
     "source_count": 1,
     "conflicts": [],
-    "date_added": "2026-09-14T09:01:38.083157+00:00",
+    "date_added": "2026-09-14T09:05:32.983344+00:00",
     "amount_recomputed": true
   },
   {
@@ -251,8 +251,8 @@
     "valuation_usd_mn": null,
     "deal_date": "2026-09-08",
     "confidence": "high",
-    "notes": "NewQuest Asia Fund IV (TPG-backed) sold 80 lakh shares at Rs 250.03 each; OxBow Master Fund bought 47.85 lakh shares at Rs 250 each for Rs 119.6 crore. Secondary market transaction on BSE following Shadowfax's public listing.",
-    "event_reported": "NewQuest Asia Fund IV sold a 1.36% stake in Shadowfax to OxBow Master Fund and other buyers for Rs 200 crore through a bulk deal on the BSE.",
+    "notes": "NewQuest sold 80 lakh shares at Rs 250.03 per share; OxBow bought 47.85 lakh shares at Rs 250 per share worth Rs 119.6 crore. Secondary market stake sale following Shadowfax's public listing.",
+    "event_reported": "NewQuest Asia Fund IV offloaded a 1.36% stake in Shadowfax for Rs 200 crore through a bulk deal on the BSE.",
     "source_url": "https://entrackr.com/news/tpg-backed-newquest-offloads-rs-200-cr-shadowfax-stake-in-a-bulk-deal-12508230",
     "source_outlet": "Entrackr",
     "source_tier": 1,
@@ -272,7 +272,7 @@
     "first_reported_by": "Entrackr",
     "source_count": 1,
     "conflicts": [],
-    "date_added": "2026-09-14T09:01:39.249153+00:00",
+    "date_added": "2026-09-14T09:05:34.449801+00:00",
     "amount_recomputed": false
   },
   {
@@ -280,7 +280,7 @@
     "ipo_milestone": null,
     "company_name": "TrueFan AI",
     "company_legal_name": null,
-    "sector": "AI-powered video generation platform for enterprise marketing",
+    "sector": "AI-powered video generation platform",
     "amount_usd_mn": null,
     "amount_as_reported": null,
     "round_stage": null,
@@ -291,8 +291,8 @@
     "valuation_usd_mn": null,
     "deal_date": "2026-09-08",
     "confidence": "high",
-    "notes": "5% stake acquisition; TrueFan AI previously raised $10 million Series A in June 2026 led by Baring Private Equity Partners India and Z3 Partners",
-    "event_reported": "Bajaj Finance acquired a 5% stake in TrueFan AI, an AI-powered video generation platform.",
+    "notes": "5% stake acquisition; TrueFan AI previously raised $10M Series A in June 2026 led by Baring Private Equity Partners India and Z3 Partners",
+    "event_reported": "Bajaj Finance acquires a 5% stake in TrueFan AI",
     "source_url": "https://entrackr.com/snippets/bajaj-finance-acquires-5-stake-in-truefan-ai-12507925",
     "source_outlet": "Entrackr",
     "source_tier": 1,
@@ -312,7 +312,7 @@
     "first_reported_by": "Entrackr",
     "source_count": 1,
     "conflicts": [],
-    "date_added": "2026-09-14T09:01:39.678078+00:00",
+    "date_added": "2026-09-14T09:05:33.193244+00:00",
     "amount_recomputed": false
   },
   {
@@ -331,8 +331,8 @@
     "valuation_usd_mn": 1800.0,
     "deal_date": "2026-09-08",
     "confidence": "high",
-    "notes": "Confidential DRHP filing; company targeting $1.8 billion valuation through IPO",
-    "event_reported": "Kuku Technologies has confidentially filed draft IPO papers with SEBI for a public issue of up to Rs 3,500 crore, targeting a valuation of around $1.8 billion.",
+    "notes": "Targeting valuation of around $1.8 billion through the IPO. Hiring 1,000-member AI team is background context, not the deal event.",
+    "event_reported": "Kuku Technologies has confidentially filed draft IPO papers with SEBI for a public issue of up to Rs 3,500 crore.",
     "source_url": "https://entrackr.com/news/kuku-to-build-1000-member-ai-team-ahead-of-rs-3500-cr-ipo-12507869",
     "source_outlet": "Entrackr",
     "source_tier": 1,
@@ -352,7 +352,7 @@
     "first_reported_by": "Entrackr",
     "source_count": 1,
     "conflicts": [],
-    "date_added": "2026-09-14T09:01:40.287879+00:00",
+    "date_added": "2026-09-14T09:05:34.350722+00:00",
     "amount_recomputed": false
   },
   {
@@ -379,8 +379,8 @@
     "valuation_usd_mn": null,
     "deal_date": "2026-09-08",
     "confidence": "high",
-    "notes": "Company co-founded in 2020 by Mansi Jain and Rajesh Jain; serves 95+ facilities treating 150M litres daily; clients include Britannia, Leela Hotels, Tata Group, Delhi Jal Board.",
-    "event_reported": "DigitalPaani raised Rs 22 crore in a funding round led by Navam Capital with participation from Enzia Ventures, Chakra Growth Capital, 3one4 Capital, Momentum Capital, Achieving Women Entrepreneurs Early Growth Fund, and Echo River Capital.",
+    "notes": null,
+    "event_reported": "DigitalPaani raised Rs 22 crore in a funding round led by Navam Capital.",
     "source_url": "https://entrackr.com/snippets/navam-capital-leads-rs-22-cr-round-in-digitalpaani-12507542",
     "source_outlet": "Entrackr",
     "source_tier": 1,
@@ -400,7 +400,7 @@
     "first_reported_by": "Entrackr",
     "source_count": 1,
     "conflicts": [],
-    "date_added": "2026-09-14T09:01:42.642316+00:00",
+    "date_added": "2026-09-14T09:05:36.934962+00:00",
     "amount_recomputed": true
   },
   {
@@ -431,8 +431,8 @@
     "valuation_usd_mn": null,
     "deal_date": "2026-09-08",
     "confidence": "high",
-    "notes": "Founded in 2023; operates across five Indian cities with subscription-based cooling model",
-    "event_reported": "Circolife raised $4.5 million in a pre-Series A funding round led by Bharat Jaisinghani.",
+    "notes": "Founded in 2023 by Abhishek Murarka, Tushar Patil and Devanshu Mishra. Thane-based, operates across five Indian cities. Plans to increase subscription base fourfold to 40,000 units within 24 months.",
+    "event_reported": "Circolife raises $4.5 million in pre-Series A funding round led by Bharat Jaisinghani",
     "source_url": "https://entrackr.com/snippets/circolife-raises-45-mn-in-pre-series-a-round-led-by-bharat-jaisinghani-12507089",
     "source_outlet": "Entrackr",
     "source_tier": 1,
@@ -452,7 +452,7 @@
     "first_reported_by": "Entrackr",
     "source_count": 1,
     "conflicts": [],
-    "date_added": "2026-09-14T09:01:42.639240+00:00",
+    "date_added": "2026-09-14T09:05:36.392351+00:00",
     "amount_recomputed": false
   },
   {
@@ -460,7 +460,7 @@
     "ipo_milestone": null,
     "company_name": "Sorry Sugar",
     "company_legal_name": null,
-    "sector": "zero-sugar beverage brand",
+    "sector": "Zero-sugar beverage brand",
     "amount_usd_mn": 1.0,
     "amount_as_reported": "$1 million",
     "round_stage": "Seed",
@@ -475,7 +475,7 @@
     "deal_date": "2026-09-08",
     "confidence": "high",
     "notes": "Founded in 2026 by Deepak Pathak, Kunal Verma, Shashank Sherawat and Saiyam Malik. Beverages sweetened with monk fruit, zero added sugar.",
-    "event_reported": "Sorry Sugar raised $1 million in a seed funding round co-led by the Dhanuka family and Amishi London.",
+    "event_reported": "Beverage brand Sorry Sugar raised $1 million in a seed funding round co-led by the Dhanuka family and Amishi London.",
     "source_url": "https://entrackr.com/snippets/beverage-brand-sorry-sugar-raises-1-mn-in-seed-round-12506729",
     "source_outlet": "Entrackr",
     "source_tier": 1,
@@ -495,7 +495,7 @@
     "first_reported_by": "Entrackr",
     "source_count": 1,
     "conflicts": [],
-    "date_added": "2026-09-14T09:01:43.696591+00:00",
+    "date_added": "2026-09-14T09:05:38.678933+00:00",
     "amount_recomputed": false
   },
   {
@@ -503,7 +503,7 @@
     "ipo_milestone": null,
     "company_name": "ARC",
     "company_legal_name": null,
-    "sector": "gaming hardware and software development",
+    "sector": "gaming technology hardware and software platform",
     "amount_usd_mn": 1.193,
     "amount_as_reported": "Rs 10.5 crore",
     "round_stage": "Pre-Seed",
@@ -518,8 +518,8 @@
     "valuation_usd_mn": null,
     "deal_date": "2026-09-08",
     "confidence": "high",
-    "notes": "Dhruv Vohra, Director at Meta APAC, participated in personal capacity.",
-    "event_reported": "ARC, a gaming technology company, raised Rs 10.5 crore in a pre-seed funding round led by Chimera VC and MIXI Global Investments.",
+    "notes": "Dhruv Vohra, Director at Meta APAC, participated in personal capacity",
+    "event_reported": "Gaming tech startup ARC raised Rs 10.5 crore in a pre-seed funding round led by Chimera VC and MIXI Global Investments.",
     "source_url": "https://entrackr.com/snippets/gaming-tech-startup-arc-raises-rs-105-cr-in-pre-seed-round-12506561",
     "source_outlet": "Entrackr",
     "source_tier": 1,
@@ -539,7 +539,7 @@
     "first_reported_by": "Entrackr",
     "source_count": 1,
     "conflicts": [],
-    "date_added": "2026-09-14T09:01:43.375468+00:00",
+    "date_added": "2026-09-14T09:05:37.228239+00:00",
     "amount_recomputed": true
   },
   {
@@ -572,7 +572,7 @@
     "deal_date": "2026-09-08",
     "confidence": "high",
     "notes": "Founded in 2024, started operations early 2025. Previous rounds: $200K pre-seed from AJVC in 2025, $50K from PedalStart in early 2025.",
-    "event_reported": "Iztri, a fabric care startup, raised Rs 10 crore in a seed funding round led by All In Capital and Suashish Group with participation from multiple angel investors.",
+    "event_reported": "Iztri raises Rs 10 crore seed funding round led by All In Capital and Suashish Group",
     "source_url": "https://entrackr.com/snippets/fabric-care-startup-iztri-raises-seed-round-led-by-all-in-capital-suashish-group-12506395",
     "source_outlet": "Entrackr",
     "source_tier": 1,
@@ -592,7 +592,7 @@
     "first_reported_by": "Entrackr",
     "source_count": 1,
     "conflicts": [],
-    "date_added": "2026-09-14T09:01:46.027999+00:00",
+    "date_added": "2026-09-14T09:05:40.997318+00:00",
     "amount_recomputed": false
   },
   {
@@ -616,7 +616,7 @@
     "valuation_usd_mn": 91.0,
     "deal_date": "2026-09-08",
     "confidence": "high",
-    "notes": "Valuation increased 62% from Series A round (Rs 532 crore). Founders' combined stake fell below 40% post-round.",
+    "notes": "Post-money valuation Rs 860 crore ($91 million), up 62% from Series A. Founders' combined stake fell below 40%.",
     "event_reported": "BlissClub raised Rs 160 crore in a Series B round led by Singularity AMC, with participation from Meesho CEO Vidit Aatrey and existing investors Elevation Capital and Eight Roads Ventures.",
     "source_url": "https://entrackr.com/decoding/blissclub-founders-stake-slips-below-40-after-series-b-meeshos-vidit-aatrey-holds-694-12506148",
     "source_outlet": "Entrackr",
@@ -637,7 +637,7 @@
     "first_reported_by": "Entrackr",
     "source_count": 1,
     "conflicts": [],
-    "date_added": "2026-09-14T09:01:46.573001+00:00",
+    "date_added": "2026-09-14T09:05:40.009477+00:00",
     "amount_recomputed": false
   },
   {
@@ -656,8 +656,8 @@
     "valuation_usd_mn": null,
     "deal_date": "2026-09-09",
     "confidence": "high",
-    "notes": "This is subscription progress reporting during the IPO bidding period, not one of the five IPO milestones (DRHP filed, SEBI approval, price band, anchor book, listing).",
-    "event_reported": "RentoMojo's IPO subscription progress on day 1 of bidding reached 1.42X, with bids for 3.08 Cr shares against 2.18 Cr shares on offer.",
+    "notes": "This article reports subscription progress (1.42X on Day 1), which is demand reporting during the IPO bidding period, not one of the five IPO milestones (DRHP filed, SEBI approval, price band, anchor book, listing). The price band was announced earlier; anchor book was allotted earlier. The article mentions these as background but reports subscription data as today's news.",
+    "event_reported": "RentoMojo's IPO was subscribed 1.42X on the first day of bidding.",
     "source_url": "https://inc42.com/buzz/rentomojo-ipo-subscribed-69-so-far-on-day-1-nii-portion-booked-90/",
     "source_outlet": "Inc42",
     "source_tier": 1,
@@ -677,7 +677,7 @@
     "first_reported_by": "Inc42",
     "source_count": 1,
     "conflicts": [],
-    "date_added": "2026-09-14T09:01:46.000291+00:00",
+    "date_added": "2026-09-14T09:05:40.927748+00:00",
     "amount_recomputed": false
   },
   {
@@ -697,7 +697,7 @@
     "deal_date": "2026-09-09",
     "confidence": "high",
     "notes": null,
-    "event_reported": "ESDS Software Solution's stock hit upper circuit limits for the fourth consecutive day, trading at 3.3 times its IPO issue price.",
+    "event_reported": "ESDS Software Solution shares hit upper circuit for fourth consecutive day, trading at 3.3x IPO issue price",
     "source_url": "https://inc42.com/buzz/esds-touches-upper-circuit-for-the-fourth-consecutive-trading-session-stock-skyrockets-3-3x-ipo-price/",
     "source_outlet": "Inc42",
     "source_tier": 1,
@@ -717,7 +717,7 @@
     "first_reported_by": "Inc42",
     "source_count": 1,
     "conflicts": [],
-    "date_added": "2026-09-14T09:01:46.226502+00:00",
+    "date_added": "2026-09-14T09:05:40.738996+00:00",
     "amount_recomputed": false
   },
   {
@@ -738,8 +738,8 @@
     "valuation_usd_mn": null,
     "deal_date": "2026-09-09",
     "confidence": "high",
-    "notes": "Second tranche of Uber's investment in Carrum this year; first tranche was $7 Mn in January 2026. Carrum operates 5,000+ vehicles across six cities and claims profitability since first month of operations.",
-    "event_reported": "Carrum Mobility raised $10 million from Uber as part of its Series B funding round.",
+    "notes": "Second tranche of Uber's investment in Carrum this year; first tranche was $7 Mn in January 2026",
+    "event_reported": "Carrum Mobility raises $10 million from Uber as part of its Series B funding round",
     "source_url": "https://inc42.com/buzz/fleet-management-startup-carrum-mobility-raises-10-mn-in-uber-led-round/",
     "source_outlet": "Inc42",
     "source_tier": 1,
@@ -759,7 +759,7 @@
     "first_reported_by": "Inc42",
     "source_count": 1,
     "conflicts": [],
-    "date_added": "2026-09-14T09:01:50.187564+00:00",
+    "date_added": "2026-09-14T09:05:42.672091+00:00",
     "amount_recomputed": false
   },
   {
@@ -784,8 +784,8 @@
     "valuation_usd_mn": null,
     "deal_date": "2026-09-09",
     "confidence": "high",
-    "notes": "Total capital raised to date is ₹375 Cr including prior Series A round of ₹60 Cr. Fundraise includes matching requirement for ₹150 Cr government RDI project.",
-    "event_reported": "QNu Labs raised ₹200 Cr in its Series A1 funding round co-led by National Quantum Mission and Speciale Invest, with participation from Sony Innovation Fund, Gaja Capital and Artha Ventures.",
+    "notes": "Funds to be used for R&D, sales, go-to-market strategy, partnerships, and to meet matching requirement for ₹150 Cr government RDI project. Total capital raised to date is ₹375 Cr.",
+    "event_reported": "QNu Labs raised ₹200 Cr in its Series A1 funding round co-led by National Quantum Mission and Speciale Invest.",
     "source_url": "https://inc42.com/buzz/quantum-cybersecurity-startup-qnu-labs-nets-%E2%82%B9200-cr-to-scale-rd/",
     "source_outlet": "Inc42",
     "source_tier": 1,
@@ -805,7 +805,7 @@
     "first_reported_by": "Inc42",
     "source_count": 1,
     "conflicts": [],
-    "date_added": "2026-09-14T09:01:50.157626+00:00",
+    "date_added": "2026-09-14T09:05:43.696768+00:00",
     "amount_recomputed": false
   },
   {
@@ -825,7 +825,7 @@
     "deal_date": "2026-09-09",
     "confidence": "high",
     "notes": null,
-    "event_reported": "Carrum Mobility, Circolife, ARC, and QNu Labs each raised separate early-stage funding rounds.",
+    "event_reported": "Four startups each raised early-stage funding rounds: Carrum Mobility, Circolife, ARC, and QNu Labs.",
     "source_url": "https://www.vccircle.com/carrummobility-circolife-arc-raise-early-stage-funding",
     "source_outlet": "VCCircle",
     "source_tier": 1,
@@ -845,7 +845,7 @@
     "first_reported_by": "VCCircle",
     "source_count": 1,
     "conflicts": [],
-    "date_added": "2026-09-14T09:01:48.162411+00:00",
+    "date_added": "2026-09-14T09:05:42.789193+00:00",
     "amount_recomputed": false
   },
   {
@@ -857,17 +857,15 @@
     "amount_usd_mn": 187.5,
     "amount_as_reported": "Rs 1,650 crore",
     "round_stage": null,
-    "investors": [
-      "Kotak Alternate Asset Managers"
-    ],
+    "investors": [],
     "lead_investor": null,
     "acquirer": "Cube Highways",
     "target": "HKR Roadways",
     "valuation_usd_mn": null,
     "deal_date": "2026-09-09",
     "confidence": "high",
-    "notes": "Kotak Alts sold majority stake; Gayatri Highways separately sold its 49% stake to Cube Highways for Rs 57.32 crore about a week prior. Kotak realized 2x return on original Rs 800 crore investment.",
-    "event_reported": "Kotak Alternate Asset Managers sold its entire stake in HKR Roadways to Cube Highways for Rs 1,650 crore, realizing a 2x return on its original Rs 800 crore investment.",
+    "notes": "Kotak Alts sold majority stake; Gayatri Highways had separately sold its 49% stake to Cube Highways for Rs 57.32 crore about a week prior. Kotak realized 2x return on its original Rs 800 crore investment.",
+    "event_reported": "Kotak Alternate Asset Managers sold its entire stake in HKR Roadways to Cube Highways for Rs 1,650 crore, realizing a 2x gain on its investment.",
     "source_url": "https://www.vccircle.com/kotakalts-sells-hkr-roadways-to-cube-highways-logs-2x-gain",
     "source_outlet": "VCCircle",
     "source_tier": 1,
@@ -887,7 +885,7 @@
     "first_reported_by": "VCCircle",
     "source_count": 1,
     "conflicts": [],
-    "date_added": "2026-09-14T09:01:50.998524+00:00",
+    "date_added": "2026-09-14T09:05:44.165936+00:00",
     "amount_recomputed": false
   }
 ]

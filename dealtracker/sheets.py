@@ -12,12 +12,14 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 log = logging.getLogger("dealtracker.sheets")
 
+# `sources` sits third, right after the dates, so the link to the article is
+# reachable without scrolling the full width of the row.
 COLUMNS = [
-    "deal_id", "date_added", "deal_date", "deal_type", "ipo_milestone",
-    "company", "legal_name", "sector", "amount_usd_mn", "amount_as_reported",
-    "round_stage", "lead_investor", "all_investors", "valuation_usd_mn",
-    "first_reported_by", "source_count", "sources", "confidence", "conflicts",
-    "read_flag",
+    "deal_id", "date_added", "sources", "deal_date", "deal_type",
+    "ipo_milestone", "company", "legal_name", "sector", "amount_usd_mn",
+    "amount_as_reported", "round_stage", "lead_investor", "all_investors",
+    "valuation_usd_mn", "first_reported_by", "source_count", "confidence",
+    "conflicts", "read_flag",
 ]
 
 # Never written by the pipeline.
@@ -35,8 +37,46 @@ def _a1_col(index_zero_based: int) -> str:
     return out
 
 
+LINK_BLUE = {"red": 0.06, "green": 0.33, "blue": 0.80}
+SEPARATOR = "  ·  "
+
+
+def sources_rich_cell(rec) -> Dict[str, Any]:
+    """One cell, one clickable link per outlet.
+
+    A plain "Outlet: https://…" string is not clickable in Google Sheets until
+    you enter edit mode, and HYPERLINK() only carries one link per cell. Rich
+    text runs are the only way to get several independently clickable outlet
+    names into a single cell, so the cell reads "Entrackr · Inc42" and each
+    name opens that outlet's article in one click.
+    """
+    sources = rec.sources or []
+    text, runs = "", []
+    for src in sources:
+        label = src.get("outlet") or "source"
+        url = src.get("url") or ""
+        if text:
+            runs.append({"startIndex": len(text), "format": {}})
+            text += SEPARATOR
+        if url:
+            runs.append({
+                "startIndex": len(text),
+                "format": {"link": {"uri": url}, "underline": True,
+                           "foregroundColor": LINK_BLUE},
+            })
+        else:
+            runs.append({"startIndex": len(text), "format": {}})
+        text += label
+    return {
+        "userEnteredValue": {"stringValue": text},
+        "textFormatRuns": runs,
+    }
+
+
 def record_to_row(rec) -> List[Any]:
     """One row per deal. Stops before read_flag so that column is never touched."""
+    # Plain-text fallback, used if the rich-text pass fails for any reason.
+    # Keeps the URLs visible so a row is never left unauditable.
     sources = " | ".join(
         "%s: %s" % (s.get("outlet", "?"), s.get("url", "")) for s in (rec.sources or [])
     )
@@ -116,13 +156,23 @@ class SheetWriter:
         if not existing:
             ws.update(range_name="A1", values=[COLUMNS])
             return COLUMNS
-        if existing[: len(COLUMNS)] != COLUMNS:
-            missing = [c for c in COLUMNS if c not in existing]
-            if missing:
-                raise RuntimeError(
-                    "sheet header does not match the expected columns; missing: %s" % missing
-                )
-        return existing
+        if existing[: len(COLUMNS)] == COLUMNS:
+            return existing
+
+        # Column order changed. Rewriting is only safe while no deals have been
+        # written -- otherwise every existing row would silently misalign.
+        data_rows = max(0, len(ws.col_values(1)) - 1)
+        if not data_rows:
+            ws.update(range_name="A1", values=[COLUMNS])
+            log.info("rewrote the header row to the current column order")
+            return COLUMNS
+
+        raise RuntimeError(
+            "the sheet's column order differs from the expected one and it already "
+            "holds %d data rows, so rewriting the header would misalign them. "
+            "Either move the columns by hand to match, or start a new worksheet.\n"
+            "expected: %s\nfound:    %s" % (data_rows, COLUMNS, existing)
+        )
 
     def append(self, records: Iterable[Any]) -> Dict[str, int]:
         """Append new deals. Returns deal_id -> sheet row number."""
@@ -138,7 +188,45 @@ class SheetWriter:
             insert_data_option="INSERT_ROWS",
             table_range="A1",
         )
-        return {rec.deal_id: first_new_row + i for i, rec in enumerate(records)}
+        row_for = {rec.deal_id: first_new_row + i for i, rec in enumerate(records)}
+        self.write_rich_sources(records, row_for)
+        return row_for
+
+    def write_rich_sources(self, records: Iterable[Any], row_for: Dict[str, int]) -> int:
+        """Replace the plain sources text with individually clickable outlets.
+
+        Best-effort: if it fails the cell keeps the plain-text version written
+        by the append, which is still complete, just not clickable.
+        """
+        header = self.worksheet.row_values(1) or COLUMNS
+        if "sources" not in header:
+            return 0
+        col = header.index("sources")
+        requests = []
+        for rec in records:
+            row = row_for.get(rec.deal_id)
+            if not row or not rec.sources:
+                continue
+            requests.append({
+                "updateCells": {
+                    "range": {
+                        "sheetId": self.worksheet.id,
+                        "startRowIndex": row - 1, "endRowIndex": row,
+                        "startColumnIndex": col, "endColumnIndex": col + 1,
+                    },
+                    "rows": [{"values": [sources_rich_cell(rec)]}],
+                    "fields": "userEnteredValue,textFormatRuns",
+                }
+            })
+        if not requests:
+            return 0
+        try:
+            self.worksheet.spreadsheet.batch_update({"requests": requests})
+        except Exception as exc:  # noqa: BLE001 - links are a nicety, rows are not
+            log.warning("could not write clickable source links (%s); "
+                        "the plain-text URLs are still in the cell", exc)
+            return 0
+        return len(requests)
 
     def update_sources(self, records: Iterable[Any], row_for: Dict[str, int]) -> int:
         """Refresh sources/source_count/conflicts on rows that gained an outlet."""
@@ -160,6 +248,7 @@ class SheetWriter:
                 })
         if updates:
             self.worksheet.batch_update(updates, value_input_option="USER_ENTERED")
+        self.write_rich_sources(list(records), row_for)
         return len(updates)
 
 
