@@ -1,0 +1,492 @@
+# Outlets monitored by the pipeline.
+#
+# Adding an outlet = adding a block here. No pipeline code changes.
+#
+#   name        display name, written to the Sheet as the outlet
+#   url         section listing page (also the homepage probed for <link rel=alternate>)
+#   tier        1 primary deal press | 2 mainstream business | 3 wire | 4 syndication
+#   type        rss | html   -- set by `python -m dealtracker discover`
+#   enabled     false = never fetched
+#   feed        resolved feed URL (filled in by discovery; hand-edit to override)
+#   feed_hints  candidate feed URLs tried before generic /feed, /rss, /feed.xml probing
+#   selectors   HTML fallback: how to find links on the listing page and body on articles
+#   flags       free-form markers; `blocked` sources are expected to fail and are
+#               reported separately from real errors in the run summary
+#
+# `discover` rewrites only the `type:` and `feed:` lines, so these comments survive.
+#
+# Article-body selectors are optional even for rss sources: RSS summaries are
+# usually too short to extract from, so the fetcher visits the article anyway and
+# falls back to generic readability heuristics when no selector is given.
+
+defaults:
+  selectors:
+    # Generic fallbacks used when a source declares none of its own.
+    listing_links: "article a[href], h2 a[href], h3 a[href], .story a[href]"
+    article_body: "article, [itemprop='articleBody'], .story-element-text, .article-body, .content-wrapper, main"
+    article_title: "h1"
+    article_date: "time[datetime], meta[property='article:published_time']"
+  # URL substrings that never lead to an article. Per-source lists extend this.
+  exclude_url_patterns:
+    - "/tag/"
+    - "/tags/"
+    - "/category/"
+    - "/author/"
+    - "/topic/"
+    - "/topics/"
+    - "/page/"
+    - "/about"
+    - "/contact"
+    - "/privacy"
+    - "/terms"
+    - "/subscribe"
+    - "/login"
+    - "/newsletter"
+    - "/advertise"
+    - "/videos/"
+    - "/photos/"
+    - "/podcast"
+    - "/live-blog"
+
+sources:
+
+  # ------------------------------------------------------------------
+  # Tier 1 -- primary startup / deal press. Highest signal, often first.
+  # ------------------------------------------------------------------
+  - name: Entrackr
+    url: https://entrackr.com/
+    tier: 1
+    type: rss
+    enabled: true
+    feed: https://entrackr.com/rss
+    feed_hints:
+      - https://entrackr.com/feed/
+      - https://entrackr.com/rss/
+    selectors:
+      listing_links: "h2 a[href], h3 a[href]"
+      article_body: "article, .entry-content, .post-content"
+
+  - name: Inc42
+    url: https://inc42.com/buzz/
+    tier: 1
+    type: rss
+    enabled: true
+    # Returns 429 at the default 1 req/sec.
+    fetch_delay_sec: 2.5
+    feed: https://inc42.com/feed/
+    feed_hints:
+      - https://inc42.com/feed/
+      - https://inc42.com/buzz/feed/
+    selectors:
+      article_body: "article, .entry-content, .single-post-content"
+
+  - name: VCCircle
+    # Next.js site: /rss/news returns the HTML app shell, not a feed. Scraped.
+    url: https://www.vccircle.com/
+    tier: 1
+    type: html
+    enabled: true
+    feed: null
+    feed_hints:
+      - https://www.vccircle.com/rss/news
+      - https://www.vccircle.com/rss
+      - https://www.vccircle.com/feed
+    flags: [paywalled]
+    selectors:
+      # Articles are bare top-level slugs (/company-raises-x); the URL
+      # plausibility filter plus these exclusions do the selecting.
+      listing_links: "a[href]"
+      article_body: "article, .article-content, .story-content, .content"
+    exclude_url_patterns:
+      - "/industry/"
+      - "/deal-type/"
+      - "/pro/"
+      - "/limited-period-offer"
+
+  - name: YourStory
+    url: https://yourstory.com/category/funding
+    tier: 1
+    type: rss
+    enabled: true
+    feed: https://yourstory.com/feed
+    feed_hints:
+      - https://yourstory.com/feed
+      - https://yourstory.com/rss
+    selectors:
+      article_body: "article, .story-content, [class*='ArticleContent']"
+
+  # ------------------------------------------------------------------
+  # Tier 2 -- mainstream business press. Broad M&A / IPO / listed-co
+  # coverage, materially noisier than tier 1.
+  # ------------------------------------------------------------------
+  - name: Moneycontrol
+    # Edge bot-management returns 403 to every non-browser UA, feeds and
+    # article pages alike. Left enabled so the run keeps reporting it: if the
+    # block lifts it starts working with no config change.
+    url: https://www.moneycontrol.com/news/business/
+    tier: 2
+    type: html
+    enabled: true
+    feed: null
+    feed_hints:
+      - https://www.moneycontrol.com/rss/business.xml
+      - https://www.moneycontrol.com/rss/MCtopnews.xml
+      - https://www.moneycontrol.com/rss/latestnews.xml
+    flags: [paywalled, blocked]
+    selectors:
+      article_body: ".content_wrapper, #contentdata, article"
+
+  - name: Economic Times
+    url: https://economictimes.indiatimes.com/news/company/corporate-trends
+    tier: 2
+    type: rss
+    enabled: true
+    feed: https://economictimes.indiatimes.com/rssfeedstopstories.cms
+    feed_hints:
+      - https://economictimes.indiatimes.com/rssfeedstopstories.cms
+      - https://economictimes.indiatimes.com/industry/rssfeeds/13352306.cms
+      - https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms
+    flags: [paywalled]
+    selectors:
+      article_body: ".artText, .article_wrap, [class*='articleBody'], article"
+
+  - name: Business Standard
+    # Same story as Moneycontrol: 403 on feeds and pages.
+    url: https://www.business-standard.com/companies
+    tier: 2
+    type: html
+    enabled: true
+    feed: null
+    feed_hints:
+      - https://www.business-standard.com/rss/companies-101.rss
+      - https://www.business-standard.com/rss/markets-106.rss
+      - https://www.business-standard.com/rss/home_page_top_stories.rss
+    flags: [paywalled, blocked]
+    selectors:
+      article_body: ".storycontent, [class*='storyContent'], article"
+
+  - name: Livemint
+    url: https://www.livemint.com/companies
+    tier: 2
+    type: rss
+    enabled: true
+    feed: https://www.livemint.com/rss/companies
+    feed_hints:
+      - https://www.livemint.com/rss/companies
+      - https://www.livemint.com/rss/markets
+      - https://www.livemint.com/rss/news
+    flags: [paywalled]
+    selectors:
+      article_body: "[class*='storyContent'], [class*='storyPage'], .mainArea, article"
+
+  - name: Financial Express
+    # /feed/ is gone (410) and /business/feed/ serves HTML. Scraped.
+    url: https://www.financialexpress.com/business/
+    tier: 2
+    type: html
+    enabled: true
+    feed: null
+    feed_hints:
+      - https://www.financialexpress.com/feed/
+      - https://www.financialexpress.com/business/feed/
+    selectors:
+      listing_links: "a[href*='/business/'], h2 a[href], h3 a[href]"
+      article_body: ".pcl-content, .article-section, article, .entry-content"
+
+  - name: NDTV Profit
+    # The feedburner feed works, but article pages 403 and the feed itself
+    # carries only ~150 chars per entry -- below min_body_chars, so nothing is
+    # extractable. Flagged rather than silently erroring every run.
+    url: https://www.ndtvprofit.com/business
+    tier: 2
+    type: rss
+    enabled: true
+    feed: https://feeds.feedburner.com/ndtvprofit-latest
+    feed_hints:
+      - https://www.ndtvprofit.com/feed
+      - https://www.ndtvprofit.com/rss
+      - https://feeds.feedburner.com/ndtvprofit-latest
+    flags: [blocked]
+    selectors:
+      article_body: "[class*='story-element'], .story, article"
+
+  - name: Outlook Business
+    url: https://www.outlookbusiness.com/
+    tier: 2
+    type: html
+    enabled: true
+    feed: null
+    feed_hints:
+      - https://www.outlookbusiness.com/feed
+      - https://www.outlookbusiness.com/rss
+    selectors:
+      listing_links: "a[href*='/corporate/'], a[href*='/news/'], h2 a[href], h3 a[href]"
+      article_body: "article, .story-content, .article-body"
+
+  - name: The Hindu
+    url: https://www.thehindu.com/business/
+    tier: 2
+    type: rss
+    enabled: true
+    feed: https://www.thehindu.com/business/feeder/default.rss
+    feed_hints:
+      - https://www.thehindu.com/business/feeder/default.rss
+      - https://www.thehindu.com/business/Industry/feeder/default.rss
+    selectors:
+      article_body: "[class*='articlebodycontent'], .article, article"
+
+  - name: Hindustan Times
+    url: https://www.hindustantimes.com/business
+    tier: 2
+    type: rss
+    enabled: true
+    feed: https://www.hindustantimes.com/feeds/rss/business/rssfeed.xml
+    feed_hints:
+      - https://www.hindustantimes.com/feeds/rss/business/rssfeed.xml
+      - https://www.hindustantimes.com/feeds/rss/business-news/rssfeed.xml
+    selectors:
+      article_body: ".detail, .storyDetails, article"
+
+  - name: Times of India
+    url: https://timesofindia.indiatimes.com/business
+    tier: 2
+    type: rss
+    enabled: true
+    feed: https://timesofindia.indiatimes.com/rssfeeds/1898055.cms
+    feed_hints:
+      - https://timesofindia.indiatimes.com/rssfeeds/1898055.cms
+    selectors:
+      article_body: "._s30J, .ga-headlines, article, [class*='_articleBody']"
+
+  - name: ET Now
+    url: https://www.etnownews.com/
+    tier: 2
+    type: rss
+    enabled: true
+    feed: https://www.etnownews.com/feeds/gns-etn-companies.xml
+    feed_hints:
+      - https://www.etnownews.com/feeds/gns-etn-companies.xml
+      - https://www.etnownews.com/feed
+    selectors:
+      article_body: ".artilce_data, article, .story-content"
+
+  - name: CNBC
+    # US-focused overall; scoped to the world-markets feed to hold the
+    # irrelevant volume down. The relevance filter still carries most of the load.
+    url: https://www.cnbc.com/world-markets/
+    tier: 2
+    type: rss
+    enabled: true
+    feed: https://www.cnbc.com/id/19832390/device/rss/rss.html
+    feed_hints:
+      - https://www.cnbc.com/id/19832390/device/rss/rss.html
+      - https://www.cnbc.com/id/100003114/device/rss/rss.html
+    flags: [us_focused]
+    selectors:
+      article_body: ".ArticleBody-articleBody, .group, article"
+
+  # ------------------------------------------------------------------
+  # Tier 3 -- press wires. Primary-source announcement text. Many outlets
+  # copy these near-verbatim, which makes them useful for first-reported-by.
+  # ------------------------------------------------------------------
+  - name: Businesswire India
+    # robots.txt disallows the RSS endpoint and the site 403s every other path.
+    # Kept enabled + flagged so the run reports it rather than hiding it.
+    url: https://www.businesswire.com/portal/site/home/news/
+    tier: 3
+    type: html
+    enabled: true
+    feed: null
+    feed_hints:
+      - https://feed.businesswire.com/rss/home/?rss=G1QFDERJXkJeEFpRXQ==
+    flags: [wire, blocked]
+    selectors:
+      article_body: ".bw-release-story, .bwbody, article"
+
+  - name: PR Newswire India
+    url: https://www.prnewswire.com/news-releases/india/
+    tier: 3
+    type: rss
+    enabled: true
+    feed: https://www.prnewswire.com/rss/india-latest-news/india-latest-news-list.rss
+    feed_hints:
+      - https://www.prnewswire.com/rss/india-latest-news/india-latest-news-list.rss
+      - https://www.prnewswire.com/rss/news-releases-list.rss
+    flags: [wire]
+    selectors:
+      listing_links: ".news-release, h3 a[href], .card a[href]"
+      article_body: ".release-body, section.release-body, article"
+
+  - name: ANI News
+    # 403 on every path including the business listing page.
+    url: https://www.aninews.in/category/business/
+    tier: 3
+    type: html
+    enabled: true
+    feed: null
+    feed_hints:
+      - https://www.aninews.in/rss/business.xml
+    flags: [wire, blocked]
+    selectors:
+      listing_links: ".news-section a[href], h2 a[href], h3 a[href]"
+      article_body: ".content, .article-content, article"
+
+  # ------------------------------------------------------------------
+  # Tier 4 -- syndication network. Appear to republish wire/PR copy
+  # near-verbatim across sites sharing a template. Shipped DISABLED:
+  # turn on only after a week of tier 1-3 output shows what is missing.
+  # When enabled, the >90% shingle-overlap gate drops verbatim reprints
+  # BEFORE they reach the model, so syndication costs no LLM calls.
+  # ------------------------------------------------------------------
+  - name: Entrepreneur Live
+    url: https://entrepreneurlive.in/
+    tier: 4
+    type: html
+    enabled: false
+    feed: null
+    feed_hints: [https://entrepreneurlive.in/feed/]
+    flags: [syndication]
+
+  - name: Startup Chronicle
+    url: https://startupchronicle.in/
+    tier: 4
+    type: rss
+    enabled: false
+    feed: https://startupchronicle.in/feed/
+    feed_hints: [https://startupchronicle.in/feed/]
+    flags: [syndication]
+
+  - name: Entrepreneur Guild
+    url: https://entrepreneurguild.in/
+    tier: 4
+    type: html
+    enabled: false
+    feed: null
+    feed_hints: [https://entrepreneurguild.in/feed/]
+    flags: [syndication]
+
+  - name: Entrepreneur Tales
+    url: https://entrepreneurtales.in/
+    tier: 4
+    type: html
+    enabled: false
+    feed: null
+    feed_hints: [https://entrepreneurtales.in/feed/]
+    flags: [syndication]
+
+  - name: Entrepreneur Edge
+    url: https://entrepreneuredge.in/
+    tier: 4
+    type: html
+    enabled: false
+    feed: null
+    feed_hints: [https://entrepreneuredge.in/feed/]
+    flags: [syndication]
+
+  - name: Startup Times India
+    url: https://startuptimes.in/
+    tier: 4
+    type: rss
+    enabled: false
+    feed: https://startuptimes.in/feed/
+    feed_hints: [https://startuptimes.in/feed/]
+    flags: [syndication]
+
+  - name: The Entrepreneur Today
+    url: https://theentrepreneurtoday.com/
+    tier: 4
+    type: html
+    enabled: false
+    feed: null
+    feed_hints: [https://theentrepreneurtoday.com/feed/]
+    flags: [syndication]
+
+  - name: The Entrepreneur India
+    url: https://theentrepreneurindia.com/
+    tier: 4
+    type: html
+    enabled: false
+    feed: null
+    feed_hints: [https://theentrepreneurindia.com/feed/]
+    flags: [syndication]
+
+  - name: Startup Magazine
+    url: https://startupmagazine.in/
+    tier: 4
+    type: rss
+    enabled: false
+    feed: https://startupmagazine.in/feed/
+    feed_hints: [https://startupmagazine.in/feed/]
+    flags: [syndication]
+
+  - name: Startup Updates
+    url: https://startupupdates.in/
+    tier: 4
+    type: html
+    enabled: false
+    feed: null
+    feed_hints: [https://startupupdates.in/feed/]
+    flags: [syndication]
+
+  - name: Startup Newswire
+    url: https://startupnewswire.in/
+    tier: 4
+    type: rss
+    enabled: false
+    feed: https://startupnewswire.in/feed/
+    feed_hints: [https://startupnewswire.in/feed/]
+    flags: [syndication]
+
+  - name: Business Saga
+    url: https://businesssaga.in/
+    tier: 4
+    type: rss
+    enabled: false
+    feed: https://businesssaga.in/feed/
+    feed_hints: [https://businesssaga.in/feed/]
+    flags: [syndication]
+
+  - name: Business Max
+    url: https://businessmax.in/
+    tier: 4
+    type: rss
+    enabled: false
+    feed: https://businessmax.in/feed/
+    feed_hints: [https://businessmax.in/feed/]
+    flags: [syndication]
+
+  - name: Republic Business
+    url: https://republicbusiness.in/
+    tier: 4
+    type: html
+    enabled: false
+    feed: null
+    feed_hints: [https://republicbusiness.in/feed/]
+    flags: [syndication]
+
+  - name: Economic Edge
+    url: https://economicedge.in/
+    tier: 4
+    type: rss
+    enabled: false
+    feed: https://economicedge.in/feed/
+    feed_hints: [https://economicedge.in/feed/]
+    flags: [syndication]
+
+  - name: Business Byte
+    url: https://businessbyte.in/
+    tier: 4
+    type: html
+    enabled: false
+    feed: null
+    feed_hints: [https://businessbyte.in/feed/]
+    flags: [syndication]
+
+  - name: Story Network
+    url: https://storynetwork.in/
+    tier: 4
+    type: rss
+    enabled: false
+    feed: https://storynetwork.in/feed/
+    feed_hints: [https://storynetwork.in/feed/]
+    flags: [syndication]

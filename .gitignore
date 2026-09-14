@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+service_account.json
+
+# Local working files, not state.
+data/articles_cache.json
+data/dropped.jsonl
+
+# data/state.sqlite and data/runs.log ARE committed: the Action writes state
+# back to the repo so the next run knows what it has already seen.

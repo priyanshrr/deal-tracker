@@ -1,0 +1,202 @@
+# Pipeline configuration. Nothing here should require a code change to tune.
+
+fx:
+  # Fixed rate, applied to every INR figure. Keep both raw and converted values
+  # in the record so a rate change never invalidates history.
+  inr_per_usd: 88.0
+
+fetch:
+  user_agent: "IndianDealTracker/0.1 (+https://example.com/deal-tracker; contact: ops@example.com)"
+  respect_robots: true
+  per_domain_delay_sec: 1.0        # max 1 req/sec per domain
+  max_domain_concurrency: 8        # concurrency ACROSS domains
+  timeout_sec: 20
+  retries: 2
+  backoff_base_sec: 2.0
+  max_items_per_source: 40         # newest N entries per source per run
+  max_article_age_hours: 72
+
+extraction:
+  # Cheap + fast: this is high-volume structured extraction, not reasoning.
+  model: "claude-haiku-4-5-20251001"
+  max_tokens: 1200
+  temperature: 0.0
+  min_body_chars: 200              # below this -> log + skip, never send to model
+  # Lines matching these (case-insensitive regex) are dropped before the length
+  # check, so subscribe prompts cannot pad a paywall teaser over the threshold.
+  boilerplate_patterns:
+    - "^subscribe to .* and get"
+    - "^follow .* on google news"
+    - "here'?s a selection of our recent premium content"
+    - "^sign up for"
+    - "^read more:"
+    - "^also read"
+    - "^download the .* app"
+    - "^this (article|story) (is|was) (auto|automatically)"
+    - "^\\(?(disclaimer|edited by|catch all the)"
+    - "^join our whatsapp"
+    - "^stay (informed|updated) with"
+    - "^first published"
+    - "^copyright \\u00a9"
+  # A body ending in an ellipsis/truncation marker is a paywall teaser, not a body.
+  truncation_markers:
+    - "\\.{4,}$"
+    - "\\u2026$"
+  max_body_chars: 12000
+  max_concurrency: 4
+  retries: 2
+  # Titles that are unambiguously roundups skip the model entirely -- a roundup
+  # extracted as one deal is the main source of garbage rows. The prompt carries
+  # the same rule, because most roundups are only detectable from the body.
+  roundup_title_patterns:
+    - "\\bround\\s*-?\\s*up\\b"
+    - "\\bweekly\\b.*\\b(funding|deals?|wrap)\\b"
+    - "\\b(daily|weekly|monthly)\\s+(digest|wrap|brief|dose)\\b"
+    - "\\bthis\\s+week\\s+in\\b"
+    - "\\bfunding\\s+(roundup|wrap|tracker)\\b"
+    - "\\bnews\\s+and\\s+updates\\b"
+    - "^\\s*\\d+\\s+(startups?|companies|deals?)\\b"
+    - "\\bstartups?\\s+that\\s+(raised|got funded)\\b"
+    - "&\\s+more\\s*$"
+
+relevance:
+  # Keyword pass over title + first paragraph. Case-insensitive, word-boundary.
+  min_hits: 1
+  funding:
+    - raises
+    - raised
+    - raising
+    - funding
+    - "series a"
+    - "series b"
+    - "series c"
+    - "series d"
+    - "series e"
+    - "series f"
+    - "series g"
+    - "series h"
+    - "seed round"
+    - "pre-seed"
+    - "pre-series"
+    - "led by"
+    - valuation
+    - bags
+    - secures
+    - "funding round"
+    - "investment round"
+    - "fund raise"
+    - fundraise
+    - "mops up"
+    - "capital infusion"
+    - "fresh capital"
+    - "closes round"
+    - "co-led"
+    - "participation from"
+    # Discontinuous patterns. `re:` marks a raw regex; anything else is a phrase.
+    # "<investor> leads Rs 22 Cr round in <company>" has no fixed phrase to match.
+    - "re:\\blead(s|ing)?\\b[^.]{0,45}\\bround\\b"
+    - "re:\\braise[sd]?\\b[^.]{0,30}\\b(mn|bn|crore|cr|million|billion|lakh)\\b"
+    - "re:\\b(pumps?|infuses?|injects?)\\s+in\\b"
+  ma:
+    - acquires
+    - acquisition
+    - acquired
+    - acquire
+    - merger
+    - merges
+    - merge
+    - buyout
+    - "stake sale"
+    - "majority stake"
+    - "controlling stake"
+    - "minority stake"
+    - takeover
+    - "buys out"
+    - "picks up stake"
+    - "buys stake"
+    - "hives off"
+    - divests
+    - divestment
+    - "sells its"
+    # Sale/stake language is discontinuous too: "NewQuest offloads Rs 200 Cr
+    # Shadowfax stake" needs the verb and the object matched at a distance.
+    - "re:\\b(sell|sells|sold|offload|offloads|offloaded|divest|divests|divested|pare[sd]?|trim[sd]?)\\b[^.]{0,60}\\b(stake|shares|business|unit|arm|subsidiary|holding|assets?)\\b"
+    - "re:\\b(stake|shares)\\b[^.]{0,45}\\b(sale|sold|bought|acquired|picked up|purchase[sd]?)\\b"
+    # "<Seller> sells <Proper Noun> to <Proper Noun>" -- a whole-company sale with
+    # no "stake" in the sentence. (?-i:...) turns off case-insensitivity for the
+    # proper-noun parts so "sells food to customers" does not match.
+    - "re:\\b(sells|sold)\\s+(?-i:[A-Z][\\w&.'-]*(?:\\s+[A-Z][\\w&.'-]*){0,4})\\s+to\\s+(?-i:[A-Z])"
+  ipo:
+    - ipo
+    - drhp
+    - rhp
+    - listing
+    - "public issue"
+    - "anchor book"
+    - "anchor investors"
+    - "price band"
+    - "sebi approval"
+    - "sebi nod"
+    - "share sale"
+    - "listing debut"
+    - "market debut"
+    - "fully subscribed"
+    - "opens for subscription"
+    - "issue price"
+    - "grey market premium"
+    - "lists at"
+    - "makes market debut"
+    - "pre-ipo"
+
+dedupe:
+  # --- Stage 1: deterministic fingerprints ---
+  funding_date_window_days: 7
+  ma_date_window_days: 7
+  ipo_date_window_days: 14
+  amount_round_decimals: 1
+  fingerprint_top_investors: 3
+
+  # --- Stage 2: embedding fallback ---
+  # Deliberately tight. A missed merge = a visible duplicate row (cheap).
+  # A wrong merge = two distinct deals silently collapsed (invisible, expensive).
+  # Retune from --no-dedup calibration output, not from intuition.
+  # NOT portable across backends -- see the note at the bottom of embed.py.
+  # 0.93 is right for a semantic model. The default lexical backend scores the
+  # SAME deal near 0.65, so at 0.93 stage 2 never fires and every non-fingerprint
+  # match becomes a visible duplicate row instead of a silent wrong merge.
+  # That is the cheaper failure, and it is what you get until you calibrate.
+  embedding_threshold: 0.93
+  embedding_lookback_days: 14
+  # "hash-tf-v1"  -- local, free, byte-stable, lexical (default)
+  # "voyage:voyage-3" -- semantic; needs `voyageai` installed and VOYAGE_API_KEY
+  embedding_model: "hash-tf-v1"
+  embedding_dims: 512
+  # Set true once you have picked a threshold that suits your backend.
+  # Left false, stage 2 only reports near-misses instead of merging on them.
+  embedding_merge_enabled: false
+  body_chars_for_embedding: 500
+
+  # --- Merge conflict reporting ---
+  amount_conflict_pct: 10.0
+
+  # --- Near-duplicate text gate (matters when tier 4 is enabled) ---
+  near_dup_enabled: true
+  near_dup_threshold: 0.90
+  near_dup_lookback_hours: 48
+  near_dup_shingle_size: 5
+
+state:
+  sqlite_path: "data/state.sqlite"
+  retention_days: 14
+
+sheets:
+  spreadsheet_id: ""               # set via GSHEET_ID env or here
+  worksheet: "deals"
+  calibration_worksheet: "calibration"   # --no-dedup writes here, never to `deals`
+  service_account_env: "GOOGLE_SERVICE_ACCOUNT_JSON"
+  service_account_file: ""         # alternative to the env var
+
+logging:
+  level: "INFO"
+  run_log: "data/runs.log"
+  dropped_log: "data/dropped.jsonl"   # everything the relevance filter rejects
