@@ -90,6 +90,7 @@ class DealRecord:
     deal_date: Optional[str] = None
     confidence: str = "low"
     notes: Optional[str] = None
+    event_reported: str = ""   # the model's own one-line reading; audit trail
 
     # --- provenance ---
     source_url: str = ""
@@ -210,6 +211,7 @@ def build_record(payload: Dict[str, Any], article, inr_per_usd: float) -> DealRe
         deal_date=_normalise_date(payload.get("deal_date"), article.published),
         confidence=confidence,
         notes=_clean_str(payload.get("notes")),
+        event_reported=_clean_str(payload.get("event_reported")) or "",
         source_url=article.url,
         source_outlet=article.outlet,
         source_tier=article.tier,

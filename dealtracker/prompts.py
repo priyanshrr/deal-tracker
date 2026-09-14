@@ -64,6 +64,14 @@ RETURN deal_type "none" FOR ANYTHING ELSE. In particular:
    - intentions and preparations: "plans to list", "eyeing an IPO", "may file a
      DRHP", "has appointed bankers for its IPO".
 
+8. BACKGROUND FACTS ARE NOT EVENTS. Articles constantly mention other deals as
+   context -- a past round, a pending IPO, an earlier acquisition. Those facts
+   are true, and they are still not what the article REPORTS. Extract only the
+   event the headline announces. If the headline announces something that is
+   not a deal, the answer is "none" even when a perfectly real deal is
+   described in the body. Somebody else's article reported that deal; this one
+   did not. A row extracted from a background mention is a false row.
+
    THE TEST, and apply it every time you are tempted to answer "ipo": name
    which ONE of the five milestones the article is REPORTING AS TODAY'S NEWS.
    If you cannot name exactly one, deal_type is not "ipo". An article can
@@ -112,6 +120,14 @@ EXTRACTION RULES
   (tranche structure, secondary component, regulatory condition, prior round).
   null if there is nothing material.
 
+ORDER OF WORK
+Fill `event_reported` first, in your own plain words, describing what the
+HEADLINE announces. Then read your own sentence back and let it decide
+deal_type. If your sentence describes hiring, a share price, a plan, a fund
+close, or more than one deal, the answer is "none" -- whatever else the article
+talks about. Never write a sentence about a fact the article mentions only as
+background to its real subject.
+
 Return only the tool call. No prose."""
 
 
@@ -121,6 +137,24 @@ TOOL = {
     "input_schema": {
         "type": "object",
         "properties": {
+            "event_reported": {
+                "type": "string",
+                "description": (
+                    "FILL THIS IN FIRST, before deal_type. One plain sentence naming the "
+                    "single thing this article reports as today's news, as if telling a "
+                    "colleague. Take it from what the HEADLINE announces. A fact carried in "
+                    "a subordinate clause -- 'the hiring comes as X filed its DRHP', "
+                    "'ahead of its IPO', 'Y, which raised $50M last year' -- is background, "
+                    "not today's event, and must never become this sentence. "
+                    "Name the actor and the action: 'Kuku is hiring 1,000 AI "
+                    "engineers', 'ESDS shares rose to 3.3x their issue price', 'four "
+                    "different startups each raised an early-stage round', 'Bajaj Finance "
+                    "bought 5% of TrueFan AI'. Describe what happened, not what the "
+                    "article mentions in passing. If the honest sentence is about hiring, "
+                    "a share price, several different deals, or a plan, then deal_type is "
+                    "'none' no matter what else the article discusses."
+                ),
+            },
             "deal_type": {
                 "type": "string",
                 "enum": ["funding", "ma", "ipo", "none"],
@@ -146,7 +180,8 @@ TOOL = {
             "confidence": {"type": "string", "enum": ["high", "medium", "low"]},
             "notes": {"type": ["string", "null"]},
         },
-        "required": ["deal_type", "company_name", "sector", "investors", "confidence"],
+        "required": ["event_reported", "deal_type", "company_name", "sector",
+                     "investors", "confidence"],
     },
 }
 

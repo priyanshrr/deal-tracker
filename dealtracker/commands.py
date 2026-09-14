@@ -133,6 +133,7 @@ def _print_record(idx, art, rec) -> None:
     print("     %s" % art.url)
     print("-" * 78)
     payload = {
+        "event_reported": rec.event_reported,
         "deal_type": rec.deal_type,
         "ipo_milestone": rec.ipo_milestone,
         "company_name": rec.company_name,
