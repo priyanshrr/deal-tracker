@@ -40,6 +40,7 @@ class SourceReport:
     listed: int = 0            # entries/links the source offered
     fetched: int = 0           # article pages successfully retrieved
     thin: int = 0              # under min_body_chars -> skipped before the model
+    already_seen: int = 0      # known URL, never refetched
     errors: int = 0
     blocked: bool = False
     error_detail: str = ""
@@ -157,7 +158,14 @@ def _html_candidates(fetcher, source, limit: int) -> List[Tuple[str, str, Option
     return out
 
 
-def ingest_source(cfg, fetcher, source, limit: Optional[int] = None) -> SourceReport:
+def _article_id_for(url: str) -> str:
+    import hashlib
+
+    return hashlib.sha1(url.encode("utf-8")).hexdigest()[:16]
+
+
+def ingest_source(cfg, fetcher, source, limit: Optional[int] = None,
+                  skip_ids: Optional[Set[str]] = None) -> SourceReport:
     limit = limit or int(cfg.get("fetch.max_items_per_source", 40))
     max_age = int(cfg.get("fetch.max_article_age_hours", 72))
     min_chars = int(cfg.get("extraction.min_body_chars", 200))
@@ -176,6 +184,15 @@ def ingest_source(cfg, fetcher, source, limit: Optional[int] = None) -> SourceRe
         return rep
 
     rep.listed = len(candidates)
+
+    # Drop anything already extracted in an earlier run BEFORE fetching the page.
+    # The URL is known from the feed, so a 30-minute cadence does not re-download
+    # the same few hundred articles every single time.
+    if skip_ids:
+        before = len(candidates)
+        candidates = [c for c in candidates if _article_id_for(c[0]) not in skip_ids]
+        rep.already_seen = before - len(candidates)
+
     body_sel = source.selector("article_body")
     title_sel = source.selector("article_title")
     boilerplate = compile_patterns(cfg.get("extraction.boilerplate_patterns"))
@@ -229,8 +246,10 @@ def ingest_source(cfg, fetcher, source, limit: Optional[int] = None) -> SourceRe
     return rep
 
 
-def ingest_all(cfg, fetcher, sources, limit: Optional[int] = None) -> List[SourceReport]:
+def ingest_all(cfg, fetcher, sources, limit: Optional[int] = None,
+               skip_ids: Optional[Set[str]] = None) -> List[SourceReport]:
     workers = int(cfg.get("fetch.max_domain_concurrency", 8))
     workers = max(1, min(workers, max(1, len(sources))))
     with ThreadPoolExecutor(max_workers=workers) as pool:
-        return list(pool.map(lambda s: ingest_source(cfg, fetcher, s, limit), sources))
+        return list(pool.map(
+            lambda s: ingest_source(cfg, fetcher, s, limit, skip_ids), sources))

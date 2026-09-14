@@ -18,7 +18,7 @@ fetch:
 
 extraction:
   # Cheap + fast: this is high-volume structured extraction, not reasoning.
-  model: "claude-haiku-4-5-20251001"
+  model: "claude-haiku-4-5"
   max_tokens: 1200
   temperature: 0.0
   min_body_chars: 200              # below this -> log + skip, never send to model

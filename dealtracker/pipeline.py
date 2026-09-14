@@ -89,7 +89,8 @@ def run(cfg, args) -> Tuple[RunSummary, Dict[str, Any]]:
     else:
         sources = cfg.enabled_sources(only=args.source, tiers=args.tier)
         fetcher = build_fetcher(cfg)
-        reports = ingest_all(cfg, fetcher, sources, limit=args.limit)
+        reports = ingest_all(cfg, fetcher, sources, limit=args.limit,
+                             skip_ids=store.seen_article_ids())
         articles = [a for r in reports for a in r.articles]
         summary["fetched"] = sum(r.fetched for r in reports)
         summary["thin"] = sum(r.thin for r in reports)
@@ -100,9 +101,13 @@ def run(cfg, args) -> Tuple[RunSummary, Dict[str, Any]]:
     artifacts["reports"] = reports
 
     # --- 2. skip articles already extracted in an earlier run ------
+    # Most are already gone (ingest skipped them by URL without fetching); this
+    # catches the rest, e.g. the same story under two URLs on one site.
     seen = store.seen_article_ids()
     fresh = [a for a in articles if a.article_id not in seen]
-    summary["already_seen"] = len(articles) - len(fresh)
+    summary["already_seen"] = (
+        sum(getattr(r, "already_seen", 0) for r in reports) + len(articles) - len(fresh)
+    )
 
     # --- 3. near-duplicate text gate -------------------------------
     fresh, near_dups, shingle_map = _near_dup_gate(cfg, store, fresh)

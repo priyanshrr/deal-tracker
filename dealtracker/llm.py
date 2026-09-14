@@ -39,6 +39,7 @@ class ExtractionStats:
     deal_none: int = 0
     input_tokens: int = 0
     output_tokens: int = 0
+    cache_read_tokens: int = 0
     errors: List[str] = field(default_factory=list)
 
 
@@ -76,7 +77,15 @@ class Extractor:
                     model=self.model,
                     max_tokens=self.max_tokens,
                     temperature=self.temperature,
-                    system=prompts.SYSTEM,
+                    # The system prompt and tool schema are byte-identical on
+                    # every call, and the article body comes after them, so the
+                    # prefix caches cleanly. Below the model's minimum cacheable
+                    # prefix this is simply ignored.
+                    system=[{
+                        "type": "text",
+                        "text": prompts.SYSTEM,
+                        "cache_control": {"type": "ephemeral"},
+                    }],
                     tools=[prompts.TOOL],
                     tool_choice={"type": "tool", "name": prompts.TOOL["name"]},
                     messages=[{"role": "user", "content": user}],
@@ -154,6 +163,7 @@ def extract_many(cfg, articles, client=None, on_result=None):
             if usage is not None:
                 stats.input_tokens += getattr(usage, "input_tokens", 0) or 0
                 stats.output_tokens += getattr(usage, "output_tokens", 0) or 0
+                stats.cache_read_tokens += getattr(usage, "cache_read_input_tokens", 0) or 0
                 try:
                     delattr(rec, "llm_usage")
                 except AttributeError:
