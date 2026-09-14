@@ -58,6 +58,11 @@ def build_parser() -> argparse.ArgumentParser:
     r.add_argument("--from-cache", default=None)
 
     sub.add_parser("initsheet", help="create/verify the header row on the target sheet")
+
+    m = sub.add_parser("migratesheet",
+                       help="reorder an existing sheet's columns to match the current schema")
+    m.add_argument("--dry-run", action="store_true",
+                   help="show what would change without touching the sheet")
     return p
 
 

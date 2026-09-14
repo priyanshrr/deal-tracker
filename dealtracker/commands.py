@@ -304,7 +304,115 @@ def cmd_initsheet(cfg, args) -> int:
     return 0
 
 
+def _parse_plain_sources(cell: str):
+    """Turn 'Entrackr: https://a | Inc42: https://b' back into outlet/url pairs."""
+    out = []
+    for chunk in (cell or "").split("|"):
+        chunk = chunk.strip()
+        if not chunk:
+            continue
+        outlet, _, url = chunk.partition(": ")
+        url = url.strip()
+        if url.startswith("http"):
+            out.append({"outlet": outlet.strip(), "url": url})
+        elif chunk.startswith("http"):
+            out.append({"outlet": "source", "url": chunk})
+    return out
+
+
+def cmd_migratesheet(cfg, args) -> int:
+    """One-time: move existing rows into the current column order.
+
+    Reordering the header alone would leave every existing value under the
+    wrong heading, so the data moves with it. `read_flag` travels with its row,
+    so your own marks are preserved.
+    """
+    import datetime
+    from types import SimpleNamespace
+
+    from dealtracker.sheets import COLUMNS, SheetWriter, sources_rich_cell
+
+    writer = SheetWriter(cfg)
+    ws = writer.worksheet
+    values = ws.get_all_values()
+    if not values:
+        print("sheet is empty - just run `initsheet`")
+        return 0
+
+    old_header, data = values[0], values[1:]
+    data = [r for r in data if any(c.strip() for c in r)]
+    if old_header[: len(COLUMNS)] == COLUMNS:
+        print("already in the current column order; nothing to do (%d data rows)" % len(data))
+        return 0
+
+    moved = [c for c in COLUMNS if c in old_header and COLUMNS.index(c) != old_header.index(c)]
+    print("%d data rows found" % len(data))
+    print("columns that move: %s" % ", ".join(moved) or "(none)")
+    dropped = [c for c in old_header if c and c not in COLUMNS]
+    if dropped:
+        print("WARNING - these columns are not in the current schema and would be lost: %s"
+              % ", ".join(dropped))
+        print("aborting; tell me about them first")
+        return 1
+
+    index = {name: i for i, name in enumerate(old_header)}
+    width = len(old_header)
+    new_rows = []
+    for row in data:
+        row = list(row) + [""] * (width - len(row))
+        new_rows.append([row[index[c]] if c in index else "" for c in COLUMNS])
+
+    if args.dry_run:
+        print("\n-- first row, before and after --")
+        before = list(data[0]) + [""] * (width - len(data[0]))
+        for name, val in list(zip(old_header, before))[:6]:
+            print("   before  %-18s %s" % (name, val[:48]))
+        print()
+        for name, val in list(zip(COLUMNS, new_rows[0]))[:6]:
+            print("   after   %-18s %s" % (name, val[:48]))
+        print("\ndry run - nothing was written")
+        return 0
+
+    stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    backup = Path("data/sheet_backup_%s.json" % stamp)
+    backup.parent.mkdir(parents=True, exist_ok=True)
+    backup.write_text(json.dumps({"header": old_header, "rows": data},
+                                 indent=2, ensure_ascii=False), encoding="utf-8")
+    print("backed up the current sheet to %s" % backup)
+
+    ws.update(range_name="A1", values=[COLUMNS] + new_rows,
+              value_input_option="USER_ENTERED")
+    print("rewrote %d rows in the new column order" % len(new_rows))
+
+    # Re-apply clickable links to the rows that were already there.
+    col = COLUMNS.index("sources")
+    requests = []
+    for i, row in enumerate(new_rows):
+        srcs = _parse_plain_sources(row[col])
+        if not srcs:
+            continue
+        rec = SimpleNamespace(sources=srcs)
+        requests.append({
+            "updateCells": {
+                "range": {"sheetId": ws.id,
+                          "startRowIndex": i + 1, "endRowIndex": i + 2,
+                          "startColumnIndex": col, "endColumnIndex": col + 1},
+                "rows": [{"values": [sources_rich_cell(rec)]}],
+                "fields": "userEnteredValue,textFormatRuns",
+            }
+        })
+    if requests:
+        try:
+            ws.spreadsheet.batch_update({"requests": requests})
+            print("made source links clickable on %d existing rows" % len(requests))
+        except Exception as exc:  # noqa: BLE001
+            print("could not add clickable links (%s); the plain URLs are still there" % exc)
+    print("\ndone. Your read_flag marks travelled with their rows.")
+    return 0
+
+
 DISPATCH = {
+    "migratesheet": cmd_migratesheet,
     "fetch": cmd_fetch,
     "filter": cmd_filter,
     "extract": cmd_extract,
