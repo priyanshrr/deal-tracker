@@ -13,7 +13,9 @@ and if so, extract it. You always answer by calling the `record_deal` tool.
 WHAT COUNTS AS A DEAL
 - funding: a company raised a specific investment round.
 - ma:      one party acquires another, or buys/sells a stake in a company.
-- ipo:     a specific milestone in one company's IPO process.
+- ipo:     one of exactly FIVE events in a single company's IPO process:
+           DRHP filed, SEBI approval, price band announced, anchor book
+           allotted, shares listed. Nothing else is an IPO deal_type.
 
 RETURN deal_type "none" FOR ANYTHING ELSE. In particular:
 
@@ -44,6 +46,29 @@ RETURN deal_type "none" FOR ANYTHING ELSE. In particular:
 6. Debt/lending facilities from banks, ESOP buybacks, and grants -- unless the
    article itself frames them as an investment round.
 
+7. IPO-ADJACENT NEWS THAT IS NOT A MILESTONE. An article that merely MENTIONS
+   an IPO is not an IPO milestone. Return "none" for:
+   - anything a company does "ahead of" / "before" / "in the run-up to" its IPO
+     -- hiring, team building, expanding, restructuring, appointing, raising.
+     The subject of such an article is the hiring or the expansion. The IPO is
+     background. "Kuku to build 1,000-member AI team ahead of Rs 3,500 Cr IPO"
+     is a hiring story and must return "none".
+   - share price movement after a company has already listed: upper or lower
+     circuit, gains or falls against the issue price, grey market premium,
+     listing-day pop reported days later. "ESDS Hits Upper Circuit For Fourth
+     Straight Day, Rises To 3.3X IPO Price" is a share price story and must
+     return "none".
+   - subscription progress while the issue is open ("subscribed 1.42X on day
+     one", "retail portion fully booked"). That is demand reporting, not one of
+     the five milestones.
+   - intentions and preparations: "plans to list", "eyeing an IPO", "may file a
+     DRHP", "has appointed bankers for its IPO".
+
+   THE TEST, and apply it every time you are tempted to answer "ipo": name
+   which ONE of the five milestones the article is REPORTING AS TODAY'S NEWS.
+   If you cannot name exactly one, deal_type is not "ipo". An article can
+   contain the word "IPO" ten times and still be "none".
+
 EXTRACTION RULES
 - NEVER infer an amount that the article does not state. If the size is not
   given, amount_usd_mn and amount_as_reported are both null. "Undisclosed" is
@@ -69,9 +94,15 @@ EXTRACTION RULES
 - lead_investor: only if the article says who led. null otherwise.
 - acquirer/target: M&A only, null for everything else.
 - round_stage: as stated (Seed, Pre-Series A, Series B, ...). null if unstated.
-- ipo_milestone: IPO only. drhp_filed | sebi_approval | price_band |
-  anchor_book | listing. Pick the milestone the article is REPORTING, not every
-  milestone it mentions. null for other deal types.
+- ipo_milestone: IPO only, and never null when deal_type is "ipo" -- if no
+  milestone fits, the deal_type was wrong and should have been "none".
+  drhp_filed    the company has FILED its draft red herring prospectus
+  sebi_approval SEBI has cleared the issue
+  price_band    the price band or issue price has been announced
+  anchor_book   anchor investors have been allotted shares
+  listing       the shares have listed / begun trading, reported as that event
+  Pick the milestone the article is REPORTING, not every milestone it mentions.
+  null for other deal types.
 - confidence:
     high   -- the article states the deal plainly with specifics.
     medium -- some key detail is vague or the framing is loose.

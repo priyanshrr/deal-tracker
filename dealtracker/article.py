@@ -219,7 +219,17 @@ def extract_published(html: str) -> Optional[str]:
     if not html:
         return None
     soup = BeautifulSoup(html, "lxml")
-    for prop in ("article:published_time", "article:modified_time", "og:published_time"):
+    # Match any meta property ending in published_time, not just the standard
+    # article:published_time -- VCCircle, for one, emits
+    # content_type:published_time, which the exact-match lookup silently missed
+    # and left every VCCircle article dateless.
+    for meta in soup.find_all("meta", attrs={"content": True}):
+        prop = (meta.get("property") or meta.get("name") or "").lower()
+        if prop.endswith("published_time") or prop.endswith("publish_date"):
+            iso = parse_date(meta["content"])
+            if iso:
+                return iso
+    for prop in ("article:modified_time", "og:updated_time"):
         meta = soup.find("meta", property=prop)
         if meta and meta.get("content"):
             iso = parse_date(meta["content"])
@@ -233,6 +243,11 @@ def extract_published(html: str) -> Optional[str]:
     t = soup.find("time", attrs={"datetime": True})
     if t:
         return parse_date(t["datetime"])
+    # Last resort: schema.org JSON-LD, which most CMSes emit even when their
+    # meta tags are non-standard.
+    m = re.search(r'"datePublished"\s*:\s*"([^"]+)"', html)
+    if m:
+        return parse_date(m.group(1))
     return None
 
 
