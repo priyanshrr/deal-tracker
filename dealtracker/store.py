@@ -47,6 +47,11 @@ CREATE TABLE IF NOT EXISTS articles (
 );
 CREATE INDEX IF NOT EXISTS articles_seen ON articles(seen_at);
 
+CREATE TABLE IF NOT EXISTS meta (
+    key   TEXT PRIMARY KEY,
+    value TEXT
+);
+
 CREATE TABLE IF NOT EXISTS runs (
     run_id     TEXT PRIMARY KEY,
     started_at TEXT,
@@ -131,6 +136,20 @@ class Store:
     def set_sheet_row(self, deal_id: str, row_number: int) -> None:
         self.conn.execute("UPDATE deals SET sheet_row = ? WHERE deal_id = ?",
                           (row_number, deal_id))
+        self.conn.commit()
+
+    def delete_deals(self, deal_ids) -> None:
+        ids = list(deal_ids)
+        if ids:
+            self.conn.executemany("DELETE FROM deals WHERE deal_id = ?", [(i,) for i in ids])
+            self.conn.commit()
+
+    def meta_get(self, key: str):
+        row = self.conn.execute("SELECT value FROM meta WHERE key = ?", (key,)).fetchone()
+        return row["value"] if row else None
+
+    def meta_set(self, key: str, value: str) -> None:
+        self.conn.execute("INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)", (key, value))
         self.conn.commit()
 
     # -- articles (near-duplicate gate) ------------------------------

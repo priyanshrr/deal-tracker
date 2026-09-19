@@ -228,14 +228,32 @@ class SheetWriter:
             return 0
         return len(requests)
 
-    def update_sources(self, records: Iterable[Any], row_for: Dict[str, int]) -> int:
+    def find_rows(self, deal_ids: Iterable[str]) -> Dict[str, int]:
+        """deal_id -> current row number, looked up in column A.
+
+        Row numbers are never stored: you may delete, sort or insert rows in the
+        sheet at any time, and a remembered number would then point at the wrong
+        deal. One read of column A is cheap and always right.
+        """
+        wanted = set(deal_ids)
+        if not wanted:
+            return {}
+        col = self.worksheet.col_values(1)
+        return {value: i + 1 for i, value in enumerate(col) if value in wanted and i > 0}
+
+    def update_sources(self, records: Iterable[Any], row_for: Optional[Dict[str, int]] = None) -> int:
         """Refresh sources/source_count/conflicts on rows that gained an outlet."""
-        updates = []
+        records = list(records)
+        if not records:
+            return 0
         header = self.ensure_header()
+        row_for = self.find_rows(r.deal_id for r in records)
+        updates = []
         for rec in records:
             row = row_for.get(rec.deal_id)
             if not row:
-                log.warning("no sheet row known for %s; skipping update", rec.deal_id)
+                log.warning("deal %s is not in the sheet (deleted by hand?); skipping update",
+                            rec.deal_id)
                 continue
             values = record_to_row(rec)
             for col in UPDATABLE_COLUMNS:
@@ -248,9 +266,23 @@ class SheetWriter:
                 })
         if updates:
             self.worksheet.batch_update(updates, value_input_option="USER_ENTERED")
-        self.write_rich_sources(list(records), row_for)
-        return len(updates)
+        self.write_rich_sources(records, row_for)
+        return len([r for r in records if r.deal_id in row_for])
 
+    def delete_deals(self, deal_ids: Iterable[str]) -> int:
+        """Remove rows by deal_id, bottom-up so earlier deletions can't shift later ones."""
+        rows = sorted(self.find_rows(deal_ids).values(), reverse=True)
+        for row in rows:
+            self.worksheet.delete_rows(row)
+        return len(rows)
+
+    def backup(self, label: str) -> str:
+        """Copy the whole worksheet to a new tab before anything destructive."""
+        name = "%s_backup_%s" % (self.worksheet_name, label)
+        existing = [ws.title for ws in self.worksheet.spreadsheet.worksheets()]
+        if name not in existing:
+            self.worksheet.spreadsheet.duplicate_sheet(self.worksheet.id, new_sheet_name=name)
+        return name
 
 CALIBRATION_EXTRA = [
     "fingerprint", "fingerprint_twin",

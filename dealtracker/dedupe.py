@@ -60,52 +60,48 @@ def _hash(parts: Sequence[Any]) -> str:
     return hashlib.sha1(raw.encode("utf-8")).hexdigest()[:16]
 
 
+# Words that describe WHAT was bought rather than WHO. "Shapoorji Pallonji
+# Group" and "Shapoorji Pallonji Group stake" are the same target.
+_TARGET_NOISE = {"stake", "stakes", "shares", "share", "business", "unit", "arm",
+                 "division", "assets", "asset", "portfolio", "interest", "majority",
+                 "minority", "controlling", "entire", "remaining", "in"}
+
+
+def _norm_target(name: str) -> str:
+    return " ".join(w for w in normalise_company(name or "").split() if w not in _TARGET_NOISE)
+
+
+def _names_agree(a: str, b: str) -> bool:
+    """Equal, or one contains the other ("tata sons" / "tata sons ltd")."""
+    if not a or not b:
+        return False
+    return a == b or a in b or b in a
+
+
 def fingerprint(record, cfg) -> Optional[str]:
-    """The date-independent part of the key. None => this record cannot be
-    fingerprinted and must fall through to stage 2."""
+    """A descriptive key for logs and calibration output.
+
+    Matching itself is done field by field in fingerprint_match: a single exact
+    hash turned out to be too brittle (one outlet writes "Pre-Series A", another
+    gives no stage, and the same round becomes two rows).
+    """
     decimals = int(cfg.get("dedupe.amount_round_decimals", 1))
-    top_n = int(cfg.get("dedupe.fingerprint_top_investors", 3))
-
     if record.deal_type == "funding":
-        # Blocking key is amount + stage. Investors are compared separately, by
-        # OVERLAP, in _funding_compatible.
-        #
-        # The brief specifies the top 3 normalised investor names as part of the
-        # key. Taken literally that makes stage 1 brittle in the common case:
-        # Entrackr names one investor, Inc42 names three, the sorted top-3 sets
-        # differ, the key differs, and the same round becomes two rows -- which
-        # breaks "one row per deal". Requiring a non-empty intersection instead
-        # is still fully deterministic, and it only ever merges rounds that share
-        # a named investor.
-        if record.amount_usd_mn is None:
+        amount = "undisclosed" if record.amount_usd_mn is None else round(float(record.amount_usd_mn), decimals)
+        if record.amount_usd_mn is None and not record.investors:
             return None
-        if not record.round_stage and not record.investors and not record.company_name:
-            return None
-        return "f:" + _hash([
-            "funding",
-            round(float(record.amount_usd_mn), decimals),
-            (record.round_stage or "").strip().lower(),
-        ])
-
+        return "f:" + _hash(["funding", amount, ",".join(top_investors(record.investors, 3))])
     if record.deal_type == "ma":
-        # Acquirer + target is highly reliable: outlets rarely disagree on who
-        # bought whom. Amount is frequently undisclosed so it is NOT in the key.
         acquirer = normalise_firm(record.acquirer or "")
-        target = normalise_company(record.target or record.company_name or "")
+        target = _norm_target(record.target or record.company_name or "")
         if not acquirer or not target:
             return None
         return "m:" + _hash(["ma", acquirer, target])
-
     if record.deal_type == "ipo":
-        # An IPO is a sequence, not a point event. DRHP, SEBI approval, price
-        # band, anchor book and listing are five legitimate rows for one company,
-        # so the milestone is part of the key. Merging on company alone would
-        # collapse the whole timeline into a single row.
         company = normalise_company(record.company_name or "")
         if not company or not record.ipo_milestone:
             return None
         return "i:" + _hash(["ipo", company, record.ipo_milestone])
-
     return None
 
 
@@ -129,29 +125,66 @@ def _company_agrees(a, b) -> bool:
     return ca == cb or ca in cb or cb in ca
 
 
-def _funding_compatible(a, b, cfg) -> bool:
+
+def _amounts_close(a: float, b: float, pct: float = 3.0) -> bool:
+    return abs(a - b) <= max(a, b) * pct / 100.0
+
+
+def _stages_compatible(a, b) -> bool:
+    """Equal, or unstated on one side. A missing stage is not a disagreement."""
+    sa = (a.round_stage or "").strip().lower()
+    sb = (b.round_stage or "").strip().lower()
+    return not sa or not sb or sa == sb
+
+
+def _funding_match(a, b, cfg) -> bool:
     top_n = int(cfg.get("dedupe.fingerprint_top_investors", 3))
+    if not _stages_compatible(a, b):
+        return False
     ia = set(top_investors(a.investors, top_n))
     ib = set(top_investors(b.investors, top_n))
-    if ia and ib:
-        # Both named investors: they must share at least one.
-        return bool(ia & ib)
-    # One side named none. Amount + stage + date alone would merge two unrelated
-    # $5M seed rounds in the same week, so require the company to agree as well.
-    return _company_agrees(a, b)
+    if ia and ib and not (ia & ib):
+        return False                        # both named investors, none shared
+    shared_investor = bool(ia & ib)
+    company = _company_agrees(a, b)
+
+    if a.amount_usd_mn is not None and b.amount_usd_mn is not None:
+        if not _amounts_close(float(a.amount_usd_mn), float(b.amount_usd_mn)):
+            return False
+        # Same amount, same window: a shared investor or the same company is enough.
+        return shared_investor or company
+    # Amount missing on at least one side -- the hardest case. The amount can't
+    # corroborate, so require BOTH a shared named investor AND the company to
+    # agree. Two unrelated undisclosed seed rounds by one fund never merge.
+    return shared_investor and company
+
+
+def _ma_match(a, b) -> bool:
+    acq_a, acq_b = normalise_firm(a.acquirer or ""), normalise_firm(b.acquirer or "")
+    tgt_a = _norm_target(a.target or a.company_name or "")
+    tgt_b = _norm_target(b.target or b.company_name or "")
+    return _names_agree(acq_a, acq_b) and _names_agree(tgt_a, tgt_b)
+
+
+def _ipo_match(a, b) -> bool:
+    if not a.ipo_milestone or a.ipo_milestone != b.ipo_milestone:
+        return False
+    return _names_agree(normalise_company(a.company_name or ""),
+                        normalise_company(b.company_name or ""))
 
 
 def fingerprint_match(a, b, cfg) -> bool:
-    if a.deal_type != b.deal_type:
-        return False
-    fa, fb = fingerprint(a, cfg), fingerprint(b, cfg)
-    if not fa or fa != fb:
+    if a.deal_type != b.deal_type or a.deal_type == "none":
         return False
     if not _within_days(a.deal_date, b.deal_date, _date_window(a, cfg)):
         return False
     if a.deal_type == "funding":
-        return _funding_compatible(a, b, cfg)
-    return True
+        return _funding_match(a, b, cfg)
+    if a.deal_type == "ma":
+        return _ma_match(a, b)
+    if a.deal_type == "ipo":
+        return _ipo_match(a, b)
+    return False
 
 
 # --- merging --------------------------------------------------------------
@@ -297,20 +330,29 @@ def deduplicate(records, cfg, existing=None, vectors=None, backend=None):
             survivors.append(rec)
             continue
 
+        target_is_new = any(target is s for s in survivors)
+        rec_id = rec.deal_id      # captured before a winning newcomer takes target's id
         merged = merge(target, rec, cfg)
-        outcome.merged_into[rec.deal_id] = merged.deal_id
-        if any(merged is s for s in survivors):
-            pass
-        elif any(merged is e for e in existing):
-            touched_existing[merged.deal_id] = merged
+        if merged is rec:
+            # The newcomer was more complete, so it became the base. It must
+            # also TAKE THE PLACE of the record it beat -- including that
+            # record's deal_id and sheet identity -- or the pipeline writes the
+            # less complete row and loses the merged sources.
+            merged.deal_id = target.deal_id
+            merged.date_added = target.date_added
+        outcome.merged_into[rec_id] = target.deal_id
+        if target_is_new:
+            for i, s in enumerate(survivors):
+                if s is target:
+                    survivors[i] = merged
+                    break
         else:
-            # The incoming record won the base contest against a stored record.
             for i, e in enumerate(existing):
-                if e.deal_id == target.deal_id:
+                if e is target:
                     existing[i] = merged
                     break
             touched_existing[merged.deal_id] = merged
-        vectors.pop(rec.deal_id, None)
+        vectors.pop(rec_id, None)
 
     return survivors, list(touched_existing.values()), outcome
 

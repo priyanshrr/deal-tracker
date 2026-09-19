@@ -157,5 +157,59 @@ n2 = rec(deal_id="n2", amount_usd_mn=20.0, round_stage="Series A",
          investors=["Tiger Global"], source_outlet="ET", source_url="https://b/10")
 check("no investor overlap -> NO merge", not fingerprint_match(n1, n2, CFG))
 
+print("\n-- regressions from the first live run (2026-09-19) --")
+d1 = rec(deal_id="dh1", company_name="DheyaTech", amount_usd_mn=4.886, round_stage="Pre-Series A",
+         investors=["Avaana Capital", "Unimech Aerospace"], deal_date="2026-09-17")
+d2 = rec(deal_id="dh2", company_name="DheyaTech", amount_usd_mn=4.886, round_stage=None,
+         investors=["Avaana Capital"], deal_date="2026-09-17", source_outlet="Inc42",
+         source_url="https://b/dh2")
+d3 = rec(deal_id="dh3", company_name="DheyaTech", amount_usd_mn=4.89, round_stage=None,
+         investors=["Avaana"], deal_date="2026-09-17", source_outlet="VCCircle",
+         source_url="https://b/dh3")
+surv, _t, _o = deduplicate([d1, d2, d3], CFG)
+check("DheyaTech: stage given once, missing twice -> 1 row", len(surv) == 1)
+check("...keeping all 3 outlets", len(surv) == 1 and surv[0].source_count == 3)
+
+s_a = rec(deal_id="sa", amount_usd_mn=10.0, round_stage="Seed", investors=["Accel"])
+s_b = rec(deal_id="sb", amount_usd_mn=10.0, round_stage="Series A", investors=["Accel"],
+          source_outlet="ET", source_url="https://b/sb")
+check("stated stages that DISAGREE still block a merge", not fingerprint_match(s_a, s_b, CFG))
+
+p1 = rec(deal_id="pp1", company_name="Physioplus Healthcare", amount_usd_mn=None,
+         round_stage="Seed", investors=["HBF"], deal_date="2026-09-18")
+p2 = rec(deal_id="pp2", company_name="Physioplus Healthcare", amount_usd_mn=None,
+         round_stage="Seed", investors=["HBF"], deal_date="2026-09-18",
+         source_outlet="VCCircle", source_url="https://b/pp2")
+check("Physioplus: undisclosed, same investor + company -> merge", fingerprint_match(p1, p2, CFG))
+p3 = rec(deal_id="pp3", company_name="Some Other Clinic", amount_usd_mn=None,
+         round_stage="Seed", investors=["HBF"], deal_date="2026-09-18",
+         source_outlet="VCCircle", source_url="https://b/pp3")
+check("undisclosed, same investor, DIFFERENT company -> no merge", not fingerprint_match(p1, p3, CFG))
+p4 = rec(deal_id="pp4", company_name="Physioplus Healthcare", amount_usd_mn=2.0,
+         round_stage="Seed", investors=["HBF"], deal_date="2026-09-18",
+         source_outlet="Inc42", source_url="https://b/pp4")
+check("one outlet discloses the amount, one doesn't -> merge", fingerprint_match(p1, p4, CFG))
+
+t1 = rec(deal_id="ts1", deal_type="ma", company_name="Shapoorji Pallonji",
+         acquirer="Tata Sons", target="Shapoorji Pallonji Group stake", deal_date="2026-09-18")
+t2 = rec(deal_id="ts2", deal_type="ma", company_name="Shapoorji Pallonji",
+         acquirer="Tata Sons", target="Shapoorji Pallonji Group", deal_date="2026-09-17",
+         source_outlet="ET Now", source_url="https://b/ts2")
+check("Tata Sons: 'Group stake' vs 'Group' -> 1 row", fingerprint_match(t1, t2, CFG))
+t3 = rec(deal_id="ts3", deal_type="ma", acquirer="Tata Sons", target="Bisleri",
+         deal_date="2026-09-17", source_outlet="ET Now", source_url="https://b/ts3")
+check("same acquirer, different target -> no merge", not fingerprint_match(t1, t3, CFG))
+
+thin = rec(deal_id="first", company_name="Acme", amount_usd_mn=5.0, investors=["Accel"],
+           source_outlet="Inc42", published="2026-09-17T05:00:00+00:00")
+rich = rec(deal_id="second", company_name="Acme", amount_usd_mn=5.0, round_stage="Seed",
+           investors=["Accel"], lead_investor="Accel", sector="widgets for x",
+           company_legal_name="Acme Pvt Ltd", notes="n", source_outlet="Entrackr",
+           source_url="https://b/rich", published="2026-09-17T09:00:00+00:00")
+surv, _t, _o = deduplicate([thin, rich], CFG)
+check("richer newcomer in the same run: still 1 row", len(surv) == 1)
+check("...and it is the RICHER record that survives", surv and surv[0].company_legal_name == "Acme Pvt Ltd")
+check("...carrying both sources", surv and surv[0].source_count == 2)
+
 print("\n%d passed, %d failed" % (len(PASS), len(FAIL)))
 sys.exit(1 if FAIL else 0)

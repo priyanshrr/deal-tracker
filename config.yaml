@@ -200,3 +200,14 @@ logging:
   level: "INFO"
   run_log: "data/runs.log"
   dropped_log: "data/dropped.jsonl"   # everything the relevance filter rejects
+
+repair:
+  # One-time cleanup, applied by the next run and then never again (completion
+  # is recorded in state.sqlite). Preview it with: python -m dealtracker repair --plan
+  # Change the id to schedule another cleanup in future; leave empty for none.
+  id: "2026-09-19-first-run-cleanup"
+  # Written before the India-only rule existed, so no Indian party was recorded.
+  drop_deal_ids:
+    - "eeb776b9f930"   # Warner Bros. Discovery Inc. -- US merger (Hindustan Times)
+    - "b361b27626d8"   # AEVEX Corp. -- US company IPO (PR Newswire)
+    - "1dffe2d2c74e"   # Prometheus -- non-Indian round (Outlook Business)

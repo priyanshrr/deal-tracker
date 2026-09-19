@@ -59,6 +59,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("initsheet", help="create/verify the header row on the target sheet")
 
+    rp = sub.add_parser("repair", help="preview the pending one-time sheet cleanup")
+    rp.add_argument("--plan", action="store_true", required=True,
+                    help="show what the next run will change (it applies itself on GitHub)")
+
     fg = sub.add_parser("forget", help="un-see articles recorded since a time, so they are retried")
     fg.add_argument("--since", required=True, help="ISO timestamp, e.g. 2026-09-19T06:40:00")
     fg.add_argument("--dry-run", action="store_true")

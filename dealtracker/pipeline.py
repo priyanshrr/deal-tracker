@@ -32,7 +32,7 @@ class RunSummary(dict):
         return (
             "run=%s fetched=%d thin=%d already_seen=%d near_dup=%d passed_filter=%d "
             "extracted=%d failed=%d none=%d new_deals=%d merged=%d written=%d updated=%d "
-            "tokens=%d/%d errors=%s first_extraction_error=%s"
+            "tokens=%d/%d errors=%s first_extraction_error=%s guard_rejected=%s"
             % (
                 self.get("run_id", "?"), self.get("fetched", 0), self.get("thin", 0),
                 self.get("already_seen", 0), self.get("near_duplicates", 0),
@@ -42,6 +42,7 @@ class RunSummary(dict):
                 self.get("input_tokens", 0), self.get("output_tokens", 0),
                 json.dumps(errors, sort_keys=True) if errors else "{}",
                 json.dumps(self.get("first_extraction_error") or ""),
+                json.dumps(self.get("guard_rejected") or {}, sort_keys=True),
             )
         )
 
@@ -145,7 +146,24 @@ def run(cfg, args) -> Tuple[RunSummary, Dict[str, Any]]:
     failed_ids = set(stats.failed_ids)
     seen_now = [a for a in fresh if a.article_id not in failed_ids]
     deals = [r for r in records if r.deal_type != "none"]
+    # Deals the code guards turned away (India-only, stage-less IPO, future
+    # listing). Recorded with names so an over-strict rule shows up in the log.
+    rejected = {}
+    for r in records:
+        if (r.notes or "").startswith("rejected: "):
+            reason = r.notes[len("rejected: "):].split(".", 1)[0]
+            rejected.setdefault(reason, []).append(r.company_name or "?")
+    summary["guard_rejected"] = {k: {"count": len(v), "examples": v[:6]} for k, v in rejected.items()}
     artifacts["records"] = records
+
+    if not dry and not calibration and not getattr(args, "no_sheet", False):
+        try:
+            from dealtracker.repair import maybe_repair
+
+            summary["repair"] = maybe_repair(cfg, store)
+        except Exception as exc:  # noqa: BLE001 - a failed cleanup must not stop the run
+            log.warning("repair failed, will retry next run: %s", exc)
+            summary["repair"] = {"error": str(exc)[:200]}
 
     existing, vectors = store.load_recent(int(cfg.get("dedupe.embedding_lookback_days", 14)))
 
@@ -192,17 +210,10 @@ def run(cfg, args) -> Tuple[RunSummary, Dict[str, Any]]:
         writer = SheetWriter(cfg)
         row_for = writer.append(survivors)
         written = len(row_for)
-        for deal_id, row in row_for.items():
-            store.set_sheet_row(deal_id, row)
         if touched:
-            known_rows = {}
-            for rec in touched:
-                row = store.sheet_row_for(rec.deal_id)
-                if row:
-                    known_rows[rec.deal_id] = row
-            updated = writer.update_sources(
-                [r for r in touched if r.deal_id in known_rows], known_rows
-            )
+            # Rows are found by deal_id in column A, so this still works after
+            # rows have been deleted or sorted by hand.
+            updated = writer.update_sources(touched)
     summary["written"] = written
     summary["updated"] = updated
 

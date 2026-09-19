@@ -91,6 +91,7 @@ class DealRecord:
     confidence: str = "low"
     notes: Optional[str] = None
     event_reported: str = ""   # the model's own one-line reading; audit trail
+    indian_party: Optional[str] = None  # the Indian company in the deal; none => not our deal
 
     # --- provenance ---
     source_url: str = ""
@@ -163,6 +164,18 @@ def _normalise_date(value: Any, fallback: Optional[str]) -> Optional[str]:
     return None
 
 
+def _is_future(deal_date: Optional[str], published: Optional[str], slack_days: int = 1) -> bool:
+    if not deal_date:
+        return False
+    try:
+        d = datetime.fromisoformat(deal_date[:10]).date()
+        ref = (datetime.fromisoformat(published).date() if published
+               else datetime.now(timezone.utc).date())
+    except ValueError:
+        return False
+    return (d - ref).days > slack_days
+
+
 def build_record(payload: Dict[str, Any], article, inr_per_usd: float) -> DealRecord:
     """Validate and normalise a raw model payload into a DealRecord."""
     deal_type = (_clean_str(payload.get("deal_type")) or "none").lower()
@@ -189,10 +202,35 @@ def build_record(payload: Dict[str, Any], article, inr_per_usd: float) -> DealRe
     recomputed = False
     derived = parse_amount_usd_mn(reported or "", inr_per_usd)
     if derived is not None:
-        # Trust the string over the model's arithmetic when they disagree.
-        if amount is None or abs(derived - amount) > max(0.05 * max(derived, 0.01), 0.05):
-            amount = derived
+        # Always convert from the reported string at the configured rate. A 5%
+        # tolerance used to let the model's own FX maths through, and the same
+        # Rs 43 crore round landed as $4.9M from one outlet and $5.1M from
+        # another -- different amounts, so the rows never merged.
+        if amount is None or abs(derived - amount) > 0.001:
             recomputed = True
+        amount = derived
+
+    notes = _clean_str(payload.get("notes"))
+    indian_party = _clean_str(payload.get("indian_party"))
+    deal_date = _normalise_date(payload.get("deal_date"), article.published)
+
+    # --- deterministic guards: rules the prompt states, enforced in code ---
+    rejected = None
+    if deal_type == "ipo" and milestone is None:
+        # An IPO row must name one of the five milestones. Without one it is
+        # speculation ("X may list") and can never deduplicate.
+        rejected = "ipo without a milestone"
+    elif deal_type == "ipo" and milestone == "listing" and _is_future(deal_date, article.published):
+        # A listing date in the future is a scheduled listing, not a listing.
+        rejected = "listing date is in the future"
+    elif deal_type != "none" and not indian_party:
+        # This tracks Indian private markets. Mainstream feeds carry world
+        # business news, and a $110bn US merger is not our deal.
+        rejected = "no Indian party"
+    if rejected:
+        notes = ("rejected: %s. %s" % (rejected, notes or "")).strip()
+        deal_type = "none"
+        milestone = None
 
     rec = DealRecord(
         deal_type=deal_type,
@@ -208,10 +246,11 @@ def build_record(payload: Dict[str, Any], article, inr_per_usd: float) -> DealRe
         acquirer=_clean_str(payload.get("acquirer")),
         target=_clean_str(payload.get("target")),
         valuation_usd_mn=_clean_float(payload.get("valuation_usd_mn")),
-        deal_date=_normalise_date(payload.get("deal_date"), article.published),
+        deal_date=deal_date,
         confidence=confidence,
-        notes=_clean_str(payload.get("notes")),
+        notes=notes,
         event_reported=_clean_str(payload.get("event_reported")) or "",
+        indian_party=indian_party,
         source_url=article.url,
         source_outlet=article.outlet,
         source_tier=article.tier,

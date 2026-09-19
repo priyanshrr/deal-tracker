@@ -326,6 +326,26 @@ def _parse_plain_sources(cell: str):
     return out
 
 
+def cmd_repair(cfg, args) -> int:
+    from dealtracker.repair import describe, plan_repair
+    from dealtracker.store import Store
+
+    store = Store(cfg.path("state.sqlite_path", "data/state.sqlite"))
+    rid = cfg.get("repair.id")
+    if not rid:
+        print("no repair configured")
+        return 0
+    if store.meta_get("repair:%s" % rid):
+        print("repair %s already applied" % rid)
+        return 0
+    records, _ = store.load_recent(int(cfg.get("state.retention_days", 14)))
+    plan = plan_repair(cfg, records)
+    print("REPAIR %s -- preview, nothing is changed\n" % rid)
+    print(describe(plan))
+    print("\nThe next GitHub run applies this once, after copying the sheet to a backup tab.")
+    return 0
+
+
 def cmd_forget(cfg, args) -> int:
     """Un-see articles recorded since a timestamp, so the next run retries them."""
     import sqlite3
@@ -437,6 +457,7 @@ def cmd_migratesheet(cfg, args) -> int:
 DISPATCH = {
     "migratesheet": cmd_migratesheet,
     "forget": cmd_forget,
+    "repair": cmd_repair,
     "fetch": cmd_fetch,
     "filter": cmd_filter,
     "extract": cmd_extract,

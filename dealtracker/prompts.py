@@ -72,6 +72,14 @@ RETURN deal_type "none" FOR ANYTHING ELSE. In particular:
    described in the body. Somebody else's article reported that deal; this one
    did not. A row extracted from a background mention is a false row.
 
+9. NOT AN INDIAN DEAL. This tracker covers Indian private markets. Business
+   feeds also carry world news. If no party to the deal -- the company raising,
+   the target, the acquirer, or the company listing -- is an Indian or
+   India-headquartered company, return "none". A US merger, a foreign IPO, or a
+   foreign startup's round is "none" even when an Indian paper reports it.
+   A foreign investor putting money into an Indian company IS a deal; an Indian
+   company buying a foreign one IS a deal.
+
    THE TEST, and apply it every time you are tempted to answer "ipo": name
    which ONE of the five milestones the article is REPORTING AS TODAY'S NEWS.
    If you cannot name exactly one, deal_type is not "ipo". An article can
@@ -108,7 +116,9 @@ EXTRACTION RULES
   sebi_approval SEBI has cleared the issue
   price_band    the price band or issue price has been announced
   anchor_book   anchor investors have been allotted shares
-  listing       the shares have listed / begun trading, reported as that event
+  listing       the shares have actually begun trading, reported as that event.
+                A listing date in the future is NOT a listing -- the article is
+                reporting some earlier milestone, or nothing.
   Pick the milestone the article is REPORTING, not every milestone it mentions.
   null for other deal types.
 - confidence:
@@ -122,7 +132,8 @@ EXTRACTION RULES
 
 ORDER OF WORK
 Fill `event_reported` first, in your own plain words, describing what the
-HEADLINE announces. Then read your own sentence back and let it decide
+HEADLINE announces. Then `indian_party`: name the Indian company in the deal,
+or null if there is none -- and if it is null, deal_type is "none". Then read your own sentence back and let it decide
 deal_type. If your sentence describes hiring, a share price, a plan, a fund
 close, or more than one deal, the answer is "none" -- whatever else the article
 talks about. Never write a sentence about a fact the article mentions only as
@@ -155,6 +166,16 @@ TOOL = {
                     "'none' no matter what else the article discusses."
                 ),
             },
+            "indian_party": {
+                "type": ["string", "null"],
+                "description": (
+                    "FILL THIS IN SECOND. The Indian company in this deal: the company "
+                    "raising money, the target, the acquirer, or the company listing -- "
+                    "whichever one is Indian or India-headquartered. null if no party "
+                    "to the deal is Indian. A foreign deal with no Indian company in it "
+                    "is not our deal, and deal_type must then be 'none'."
+                ),
+            },
             "deal_type": {
                 "type": "string",
                 "enum": ["funding", "ma", "ipo", "none"],
@@ -180,8 +201,8 @@ TOOL = {
             "confidence": {"type": "string", "enum": ["high", "medium", "low"]},
             "notes": {"type": ["string", "null"]},
         },
-        "required": ["event_reported", "deal_type", "company_name", "sector",
-                     "investors", "confidence"],
+        "required": ["event_reported", "indian_party", "deal_type", "company_name",
+                     "sector", "investors", "confidence"],
     },
 }
 
