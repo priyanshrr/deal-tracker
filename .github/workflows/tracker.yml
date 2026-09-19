@@ -1,0 +1,93 @@
+name: deal-tracker
+
+on:
+  schedule:
+    # Once an hour, on the hour. Chosen to stay inside GitHub's free tier for
+    # private repos (2,000 Action minutes/month); every 30 minutes would exceed
+    # it. GitHub queues rather than guarantees schedules, so the pipeline is
+    # idempotent: articles already seen are skipped without being refetched, so
+    # a late or doubled run costs nothing extra.
+    - cron: "0 * * * *"
+  workflow_dispatch:
+    inputs:
+      no_dedup:
+        description: "Calibration mode: one row per record, no merging"
+        type: boolean
+        default: false
+      limit:
+        description: "Max articles per source"
+        default: "40"
+
+# One run at a time: two concurrent runs would both write the same deals to the
+# sheet and then race on committing state.sqlite.
+concurrency:
+  group: deal-tracker
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Run the pipeline
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          GSHEET_ID: ${{ secrets.GSHEET_ID }}
+        run: |
+          python -m dealtracker run \
+            --limit "${{ github.event.inputs.limit || 40 }}" \
+            ${{ github.event.inputs.no_dedup == 'true' && '--no-dedup' || '' }} \
+            | tee run-output.txt
+
+      - name: Commit state
+        run: |
+          git config user.name  "deal-tracker[bot]"
+          git config user.email "deal-tracker[bot]@users.noreply.github.com"
+          # dropped.jsonl is deliberately NOT committed: it grows every run and
+          # is published as a build artifact instead.
+          git add data/state.sqlite data/runs.log 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "no state change"
+          else
+            git commit -m "state: run $(date -u +%Y-%m-%dT%H:%MZ)"
+            # Another scheduled run may have pushed while this one was working.
+            for attempt in 1 2 3; do
+              git pull --rebase --autostash origin "${GITHUB_REF_NAME}" && \
+                git push origin "HEAD:${GITHUB_REF_NAME}" && break
+              echo "push attempt $attempt failed, retrying"
+              sleep 5
+            done
+          fi
+
+      - name: Summarise
+        if: always()
+        run: |
+          {
+            echo '### Deal tracker run'
+            echo '```'
+            tail -n 40 run-output.txt 2>/dev/null || echo 'no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: run-logs
+          path: |
+            run-output.txt
+            data/runs.log
+            data/dropped.jsonl
+          retention-days: 7
