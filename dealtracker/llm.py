@@ -41,6 +41,7 @@ class ExtractionStats:
     output_tokens: int = 0
     cache_read_tokens: int = 0
     errors: List[str] = field(default_factory=list)
+    failed_ids: List[str] = field(default_factory=list)
 
 
 class Extractor:
@@ -155,6 +156,7 @@ def extract_many(cfg, articles, client=None, on_result=None):
             stats.attempted += 1
             if rec is None:
                 stats.failed += 1
+                stats.failed_ids.append(art.article_id)
                 stats.errors.append("%s: %s" % (art.outlet, err))
                 log.warning("extraction failed [%s] %s: %s", art.outlet, art.url, err)
                 continue

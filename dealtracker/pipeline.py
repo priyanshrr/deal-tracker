@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
@@ -18,21 +19,29 @@ from dealtracker.store import Store
 log = logging.getLogger("dealtracker.pipeline")
 
 
+def _redact(text: str) -> str:
+    """Error text goes into a committed, public log -- never let a key through."""
+    text = re.sub(r"sk-ant-[A-Za-z0-9_\-]+", "sk-ant-***", text or "")
+    text = re.sub(r"ghp_[A-Za-z0-9]+", "ghp_***", text)
+    return text.replace("\n", " ")[:240]
+
+
 class RunSummary(dict):
     def line(self) -> str:
         errors = self.get("errors_by_source") or {}
         return (
             "run=%s fetched=%d thin=%d already_seen=%d near_dup=%d passed_filter=%d "
-            "extracted=%d none=%d new_deals=%d merged=%d written=%d updated=%d "
-            "tokens=%d/%d errors=%s"
+            "extracted=%d failed=%d none=%d new_deals=%d merged=%d written=%d updated=%d "
+            "tokens=%d/%d errors=%s first_extraction_error=%s"
             % (
                 self.get("run_id", "?"), self.get("fetched", 0), self.get("thin", 0),
                 self.get("already_seen", 0), self.get("near_duplicates", 0),
                 self.get("passed_filter", 0), self.get("extracted", 0),
-                self.get("deal_type_none", 0), self.get("new_deals", 0),
+                self.get("extraction_failed", 0), self.get("deal_type_none", 0), self.get("new_deals", 0),
                 self.get("merged", 0), self.get("written", 0), self.get("updated", 0),
                 self.get("input_tokens", 0), self.get("output_tokens", 0),
                 json.dumps(errors, sort_keys=True) if errors else "{}",
+                json.dumps(self.get("first_extraction_error") or ""),
             )
         )
 
@@ -130,6 +139,11 @@ def run(cfg, args) -> Tuple[RunSummary, Dict[str, Any]]:
     summary["deal_type_none"] = stats.deal_none
     summary["input_tokens"] = stats.input_tokens
     summary["output_tokens"] = stats.output_tokens
+    summary["first_extraction_error"] = _redact(stats.errors[0]) if stats.errors else ""
+    # An article whose extraction FAILED has not been read. Recording it as
+    # seen would make every later run skip it, silently losing the deal.
+    failed_ids = set(stats.failed_ids)
+    seen_now = [a for a in fresh if a.article_id not in failed_ids]
     deals = [r for r in records if r.deal_type != "none"]
     artifacts["records"] = records
 
@@ -142,7 +156,7 @@ def run(cfg, args) -> Tuple[RunSummary, Dict[str, Any]]:
         summary["new_deals"] = len(entries)
         summary["merged"] = 0
         if not dry:
-            store.record_articles([(a, shingle_map.get(a.article_id)) for a in fresh])
+            store.record_articles([(a, shingle_map.get(a.article_id)) for a in seen_now])
             store.upsert([e["record"] for e in entries], vectors=new_vectors,
                          vector_model=backend.model_id,
                          fingerprints={e["record"].deal_id: e["fingerprint"] for e in entries})
@@ -194,7 +208,7 @@ def run(cfg, args) -> Tuple[RunSummary, Dict[str, Any]]:
 
     # --- 8. state ---------------------------------------------------
     if not dry:
-        store.record_articles([(a, shingle_map.get(a.article_id)) for a in fresh])
+        store.record_articles([(a, shingle_map.get(a.article_id)) for a in seen_now])
         body_chars = int(cfg.get("dedupe.body_chars_for_embedding", 500))
         new_vectors = {
             r.deal_id: backend.embed(record_text(r, body_chars=body_chars))

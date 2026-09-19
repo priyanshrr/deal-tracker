@@ -243,6 +243,12 @@ def _print_run_report(summary, artifacts, calibration: bool) -> None:
             print("      %-24s %d%s" % (src, n, blocked))
     print("  tokens: %d in / %d out" % (summary.get("input_tokens", 0),
                                         summary.get("output_tokens", 0)))
+    if summary.get("extraction_failed") and not summary.get("extracted"):
+        print("\n" + "!" * 78)
+        print("EXTRACTION FAILED: every call to the model errored, so nothing was written.")
+        print("These articles were NOT marked as seen; the next run will retry them.")
+        print("first error: %s" % summary.get("first_extraction_error"))
+        print("!" * 78)
 
     for art, url, score in (artifacts.get("near_duplicates") or [])[:10]:
         print("  near-dup %.2f  %s\n              ~ %s" % (score, art.url, url))
@@ -318,6 +324,23 @@ def _parse_plain_sources(cell: str):
         elif chunk.startswith("http"):
             out.append({"outlet": "source", "url": chunk})
     return out
+
+
+def cmd_forget(cfg, args) -> int:
+    """Un-see articles recorded since a timestamp, so the next run retries them."""
+    import sqlite3
+
+    db = cfg.path("state.sqlite_path", "data/state.sqlite")
+    con = sqlite3.connect(str(db))
+    n = con.execute("SELECT COUNT(*) FROM articles WHERE seen_at >= ?", (args.since,)).fetchone()[0]
+    if args.dry_run:
+        print("would forget %d articles recorded since %s" % (n, args.since))
+        return 0
+    con.execute("DELETE FROM articles WHERE seen_at >= ?", (args.since,))
+    con.commit()
+    con.close()
+    print("forgot %d articles recorded since %s; the next run will retry them" % (n, args.since))
+    return 0
 
 
 def cmd_migratesheet(cfg, args) -> int:
@@ -413,6 +436,7 @@ def cmd_migratesheet(cfg, args) -> int:
 
 DISPATCH = {
     "migratesheet": cmd_migratesheet,
+    "forget": cmd_forget,
     "fetch": cmd_fetch,
     "filter": cmd_filter,
     "extract": cmd_extract,

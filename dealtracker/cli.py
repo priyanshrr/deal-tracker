@@ -59,6 +59,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("initsheet", help="create/verify the header row on the target sheet")
 
+    fg = sub.add_parser("forget", help="un-see articles recorded since a time, so they are retried")
+    fg.add_argument("--since", required=True, help="ISO timestamp, e.g. 2026-09-19T06:40:00")
+    fg.add_argument("--dry-run", action="store_true")
+
     m = sub.add_parser("migratesheet",
                        help="reorder an existing sheet's columns to match the current schema")
     m.add_argument("--dry-run", action="store_true",
