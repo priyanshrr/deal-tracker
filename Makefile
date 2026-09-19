@@ -31,7 +31,7 @@ calibrate:     ## one row per record + neighbours, for picking the threshold
 	$(PY) -m dealtracker run --limit 40 --no-dedup
 
 test:
-	$(PY) tests/test_dedupe.py && $(PY) tests/test_pipeline.py && $(PY) tests/test_failed_extraction.py && $(PY) tests/test_repair.py
+	$(PY) tests/test_dedupe.py && $(PY) tests/test_pipeline.py && $(PY) tests/test_failed_extraction.py && $(PY) tests/test_repair.py && $(PY) tests/test_structured.py
 
 clean:
 	rm -rf data/state.sqlite data/articles_cache.json __pycache__ dealtracker/__pycache__

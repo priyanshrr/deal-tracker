@@ -137,11 +137,16 @@ sources:
       article_body: ".content_wrapper, #contentdata, article"
 
   - name: Economic Times
-    url: https://economictimes.indiatimes.com/news/company/corporate-trends
+    # Was on ET's general "top stories" feed, which is mostly not about deals.
+    # ETtech's funding and startup feeds are deal-dense and cover much of what
+    # the blocked outlets (Moneycontrol, Business Standard) report.
+    url: https://economictimes.indiatimes.com/tech/funding
     tier: 2
     type: rss
     enabled: true
-    feed: https://economictimes.indiatimes.com/rssfeedstopstories.cms
+    feed: https://economictimes.indiatimes.com/tech/funding/rssfeeds/78570540.cms
+    extra_feeds:
+      - https://economictimes.indiatimes.com/tech/startups/rssfeeds/78570550.cms
     feed_hints:
       - https://economictimes.indiatimes.com/rssfeedstopstories.cms
       - https://economictimes.indiatimes.com/industry/rssfeeds/13352306.cms
@@ -330,6 +335,18 @@ sources:
     selectors:
       listing_links: ".news-section a[href], h2 a[href], h3 a[href]"
       article_body: ".content, .article-content, article"
+
+  - name: SEBI
+    # The regulator's list of draft red herring prospectuses: the primary
+    # source for the drhp_filed milestone, often ahead of any newspaper.
+    # Each line is already company + date + link, so rows are built directly
+    # (dealtracker/structured.py) with no model call. Addenda are skipped.
+    url: https://www.sebi.gov.in/sebiweb/home/HomeAction.do?doListing=yes&sid=3&ssid=15&smid=10
+    tier: 3
+    type: sebi_drhp
+    enabled: true
+    feed: null
+    flags: [primary, structured]
 
   # ------------------------------------------------------------------
   # Tier 4 -- syndication network. Appear to republish wire/PR copy

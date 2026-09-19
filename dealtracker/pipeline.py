@@ -110,6 +110,21 @@ def run(cfg, args) -> Tuple[RunSummary, Dict[str, Any]]:
         summary["blocked_sources"] = [r.source for r in reports if r.blocked and r.errors]
     artifacts["reports"] = reports
 
+    # Structured sources: rows straight from the page, no model call.
+    structured_articles, structured_records = [], []
+    if not getattr(args, "from_cache", None):
+        from dealtracker.structured import ingest_sebi_drhp
+
+        seen_before = store.seen_article_ids()
+        for s in sources:
+            if s.get("type") == "sebi_drhp":
+                arts, recs, err = ingest_sebi_drhp(cfg, fetcher, s, seen_before)
+                structured_articles.extend(arts)
+                structured_records.extend(recs)
+                if err:
+                    summary["errors_by_source"][s.name] = summary["errors_by_source"].get(s.name, 0) + 1
+    summary["structured_rows"] = len(structured_records)
+
     # --- 2. skip articles already extracted in an earlier run ------
     # Most are already gone (ingest skipped them by URL without fetching); this
     # catches the rest, e.g. the same story under two URLs on one site.
@@ -134,6 +149,7 @@ def run(cfg, args) -> Tuple[RunSummary, Dict[str, Any]]:
     # --- 5. extraction ---------------------------------------------
     # `_client` is only ever set by the test harness; production leaves it None.
     records, stats = extract_many(cfg, candidates, client=getattr(args, "_client", None))
+    records = records + structured_records
     summary["extracted"] = stats.succeeded
     summary["extraction_failed"] = stats.failed
     summary["roundup_titles_skipped"] = stats.skipped_roundup
@@ -174,7 +190,7 @@ def run(cfg, args) -> Tuple[RunSummary, Dict[str, Any]]:
         summary["new_deals"] = len(entries)
         summary["merged"] = 0
         if not dry:
-            store.record_articles([(a, shingle_map.get(a.article_id)) for a in seen_now])
+            store.record_articles([(a, shingle_map.get(a.article_id)) for a in seen_now + structured_articles])
             store.upsert([e["record"] for e in entries], vectors=new_vectors,
                          vector_model=backend.model_id,
                          fingerprints={e["record"].deal_id: e["fingerprint"] for e in entries})
@@ -219,7 +235,7 @@ def run(cfg, args) -> Tuple[RunSummary, Dict[str, Any]]:
 
     # --- 8. state ---------------------------------------------------
     if not dry:
-        store.record_articles([(a, shingle_map.get(a.article_id)) for a in seen_now])
+        store.record_articles([(a, shingle_map.get(a.article_id)) for a in seen_now + structured_articles])
         body_chars = int(cfg.get("dedupe.body_chars_for_embedding", 500))
         new_vectors = {
             r.deal_id: backend.embed(record_text(r, body_chars=body_chars))

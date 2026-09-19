@@ -107,13 +107,32 @@ def _feed_text(entry) -> str:
 
 
 def _feed_candidates(fetcher, source, limit: int, max_age_hours: int) -> List[Tuple[str, str, Optional[str], str]]:
-    """-> [(url, title, published_iso, feed_text)]"""
-    res = fetcher.get(source["feed"])
-    if not res.ok:
-        raise RuntimeError(res.error or "feed_fetch_failed")
-    parsed = feedparser.parse(res.text)
+    """-> [(url, title, published_iso, feed_text)], newest first, across every feed.
+
+    A source may list `extra_feeds`: one outlet, several feeds (Economic Times
+    publishes separate funding and startup feeds). They are merged and
+    de-duplicated by URL so a story in both counts once, under one outlet name.
+    """
+    feeds = [source["feed"]] + list(source.get("extra_feeds") or [])
+    entries, failures = [], []
+    for url in feeds:
+        res = fetcher.get(url)
+        if not res.ok:
+            failures.append(res.error or "feed_fetch_failed")
+            continue
+        entries.extend(feedparser.parse(res.text).entries)
+    if not entries and failures:
+        raise RuntimeError(failures[0])
+    seen_urls = set()
+    unique = []
+    for entry in entries:
+        link = urldefrag((entry.get("link") or "").strip())[0]
+        if link and link not in seen_urls:
+            seen_urls.add(link)
+            unique.append(entry)
+    unique.sort(key=lambda e: _entry_date(e) or "", reverse=True)
     out = []
-    for entry in parsed.entries:
+    for entry in unique:
         link = (entry.get("link") or "").strip()
         if not link:
             continue
@@ -246,8 +265,14 @@ def ingest_source(cfg, fetcher, source, limit: Optional[int] = None,
     return rep
 
 
+ARTICLE_TYPES = ("rss", "html")
+
+
 def ingest_all(cfg, fetcher, sources, limit: Optional[int] = None,
                skip_ids: Optional[Set[str]] = None) -> List[SourceReport]:
+    # Structured sources (e.g. SEBI filings) produce rows directly and are
+    # handled by dealtracker.structured, not read as articles.
+    sources = [s for s in sources if s.get("type") in ARTICLE_TYPES]
     workers = int(cfg.get("fetch.max_domain_concurrency", 8))
     workers = max(1, min(workers, max(1, len(sources))))
     with ThreadPoolExecutor(max_workers=workers) as pool:

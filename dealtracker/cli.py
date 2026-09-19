@@ -100,6 +100,7 @@ def main(argv: Optional[List[str]] = None) -> int:
                 targets = [s for s in targets if s.name.lower() in names]
         else:
             targets = cfg.enabled_sources(only=args.source, tiers=args.tier)
+        targets = [s for s in targets if s.get("type") in ("rss", "html")]
         probes = discover_all(cfg, fetcher, targets, workers=args.concurrency)
         print(apply_and_report(cfg, probes, write=not args.dry_run))
         if not args.dry_run:
